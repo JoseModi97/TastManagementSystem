@@ -74,42 +74,61 @@ class UserManagementController extends Controller
         $user = $this->findModel($id);
         $authManager = Yii::$app->authManager;
 
-        $allRoles = $authManager->getRoles();
-        $allRolesList = ArrayHelper::map($allRoles, 'name', 'description'); // For dropdown
+        $allSystemRoles = $authManager->getRoles();
+        $allSystemRolesMap = ArrayHelper::map($allSystemRoles, 'name', 'description'); // name => description
 
-        // Get current roles for the user
-        $userRolesObjects = $authManager->getRolesByUser($user->id);
-        // Get just the names for pre-selection in form
-        $userRoleNames = array_keys($userRolesObjects);
+        $currentUserRoleObjects = $authManager->getRolesByUser($user->id);
+        $currentUserRolesMap = ArrayHelper::map($currentUserRoleObjects, 'name', 'description'); // name => description
 
-        // Using a simple model for form handling; Yii::$app->request->post('roles') could also be used
-        $roleAssignmentModel = new \yii\base\DynamicModel(['roles' => $userRoleNames]);
-        $roleAssignmentModel->addRule(['roles'], 'each', ['rule' => ['in', 'range' => array_keys($allRolesList)]]);
+        // Roles available for assignment (all system roles MINUS current user roles)
+        $assignableRolesList = array_diff_key($allSystemRolesMap, $currentUserRolesMap);
+
+        // Dynamic model for roles to be added via checkboxes
+        $roleAddModel = new \yii\base\DynamicModel(['roles_to_add' => null]); // Attribute name changed
+        // Ensure roles_to_add is treated as an array, even if only one or none are selected
+        $roleAddModel->addRule(['roles_to_add'], 'each', ['rule' => ['in', 'range' => array_keys($assignableRolesList)]]);
+        $roleAddModel->addRule(['roles_to_add'], 'default', ['value' => []]); // Default to empty array if nothing submitted
 
 
-        if ($roleAssignmentModel->load(Yii::$app->request->post()) && $roleAssignmentModel->validate()) {
-            $authManager->revokeAll($user->id); // Revoke all existing roles first
+        if ($roleAddModel->load(Yii::$app->request->post()) && $roleAddModel->validate()) {
+            $rolesToAdd = (array) $roleAddModel->roles_to_add; // Ensure it's an array
+            $assignedCount = 0;
 
-            if (!empty($roleAssignmentModel->roles)) {
-                foreach ((array)$roleAssignmentModel->roles as $roleName) { // Ensure it's an array
+            if (!empty($rolesToAdd)) {
+                foreach ($rolesToAdd as $roleName) {
+                    // Safety check: Prevent admin from assigning 'admin' to self if they are already admin
+                    // (though the UI should prevent this by not listing it as assignable)
+                    if ($roleName === 'admin' && $user->id === Yii::$app->user->id && isset($currentUserRolesMap['admin'])) {
+                        Yii::$app->session->addFlash('info', 'Admin role is already assigned to yourself.');
+                        continue;
+                    }
+
                     $role = $authManager->getRole($roleName);
-                    if ($role) {
+                    if ($role && !$authManager->checkAccess($user->id, $roleName)) { // Check if not already assigned (double check)
                         try {
                             $authManager->assign($role, $user->id);
+                            $assignedCount++;
                         } catch (\Exception $e) {
-                            Yii::$app->session->setFlash('error', "Failed to assign role {$roleName}: " . $e->getMessage());
+                            Yii::$app->session->setFlash('error', "Failed to assign role '{$roleName}': " . $e->getMessage());
                         }
                     }
                 }
             }
-            Yii::$app->session->setFlash('success', "User roles updated successfully for {$user->username}.");
-            return $this->redirect(['index']);
+
+            if ($assignedCount > 0) {
+                 Yii::$app->session->setFlash('success', "Successfully added {$assignedCount} role(s) to {$user->username}.");
+            } else {
+                 Yii::$app->session->setFlash('info', "No new roles were selected or assigned to {$user->username}.");
+            }
+            // Redirect back to the same page to see the updated list of assigned roles and available roles
+            return $this->redirect(['assign-role', 'id' => $user->id]);
         }
 
         return $this->render('assign-role', [
             'user' => $user,
-            'allRolesList' => $allRolesList,
-            'roleAssignmentModel' => $roleAssignmentModel,
+            'currentUserRolesMap' => $currentUserRolesMap, // Pass currently assigned roles for display as text
+            'assignableRolesList' => $assignableRolesList, // Pass only assignable roles for checkboxes
+            'roleAddModel' => $roleAddModel,          // Pass the new model for the form
         ]);
     }
 
