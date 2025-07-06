@@ -29,14 +29,24 @@ $this->params['breadcrumbs'][] = 'Assign Roles';
     <?php $form = ActiveForm::begin(); ?>
 
     <?= $form->field($roleAssignmentModel, 'roles[]')->checkboxList($allRolesList, [
-        'item' => function ($index, $label, $name, $checked, $value) use ($roleAssignmentModel) { // Added: use ($roleAssignmentModel)
-            // $label here is the role description, $value is the role name
-            return Html::checkbox($name, $checked, [
+        'item' => function ($index, $label, $name, $checked, $value) use ($roleAssignmentModel, $user) {
+            // $label here is the role description ($allRolesList maps name to description)
+            // $value is the role name (e.g., 'admin', 'user')
+
+            $options = [
                 'value' => $value,
                 'label' => '<label for="' . Html::getInputId($roleAssignmentModel, 'roles[]') . '_' . $index . '">' . Html::encode($label) . ' (' . Html::encode($value) . ')</label>',
                 'id' => Html::getInputId($roleAssignmentModel, 'roles[]') . '_' . $index,
                 'class' => 'form-check-input',
-            ]);
+            ];
+
+            // Prevent admin from unchecking their own 'admin' role
+            if ($value === 'admin' && $user->id === Yii::$app->user->id && $checked) {
+                $options['disabled'] = true;
+                $options['label'] .= ' (Cannot unassign your own admin role)';
+            }
+
+            return Html::checkbox($name, $checked, $options);
         },
         'separator' => '<br>',
         'class' => 'form-check', // Add class to the container of checkboxes
