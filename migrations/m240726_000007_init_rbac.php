@@ -13,7 +13,9 @@ class m240726_000007_init_rbac extends Migration
     public function safeUp()
     {
         $authManager = Yii::$app->authManager;
-        $this->assertNotNull($authManager, 'authManager is not configured.');
+        if ($authManager === null) {
+            throw new \yii\base\InvalidConfigException('authManager component is not configured.');
+        }
         $tableOptions = null;
         if ($this->db->driverName === 'mysql') {
             // http://stackoverflow.com/questions/766809/whats-the-difference-between-utf8-general-ci-and-utf8-unicode-ci
@@ -82,7 +84,12 @@ class m240726_000007_init_rbac extends Migration
     public function safeDown()
     {
         $authManager = Yii::$app->authManager;
-        $this->assertNotNull($authManager, 'authManager is not configured.');
+        if ($authManager === null) {
+            // If authManager isn't configured, it's unlikely the tables were created by it,
+            // but throwing an exception is safer to halt if something is unexpected.
+            // Alternatively, could log a warning and return true if tables might exist independently.
+            throw new \yii\base\InvalidConfigException('authManager component is not configured. Cannot reliably clean up RBAC tables.');
+        }
 
         $this->dropTable($authManager->assignmentTable);
         $this->dropTable($authManager->itemChildTable);

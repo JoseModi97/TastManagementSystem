@@ -15,7 +15,9 @@ class m240726_000008_add_rbac_data extends Migration
     public function safeUp()
     {
         $auth = Yii::$app->authManager;
-        $this->assertNotNull($auth, 'authManager is not configured.');
+        if ($auth === null) {
+            throw new \yii\base\InvalidConfigException('authManager component is not configured.');
+        }
 
         // 0. Add the AuthorRule
         $authorRule = new AuthorRule();
@@ -143,7 +145,9 @@ class m240726_000008_add_rbac_data extends Migration
     public function safeDown()
     {
         $auth = Yii::$app->authManager;
-        $this->assertNotNull($auth, 'authManager is not configured.');
+        if ($auth === null) {
+            throw new \yii\base\InvalidConfigException('authManager component is not configured. Cannot reliably clean up RBAC data.');
+        }
 
         // Remove assignments first if any were made directly in up() for default users.
         // Example: $auth->revokeAll(1); // if admin role was assigned to user 1
