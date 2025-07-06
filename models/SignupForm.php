@@ -59,6 +59,19 @@ class SignupForm extends Model
         $user->setPassword($this->password);
         $user->generateAuthKey();
 
-        return $user->save() ? $user : null;
+        if ($user->save()) {
+            // Assign default role 'user' to the new user
+            $auth = Yii::$app->authManager;
+            $userRole = $auth->getRole('user');
+            if ($userRole) {
+                $auth->assign($userRole, $user->getId());
+            } else {
+                // Log error or handle case where 'user' role doesn't exist
+                Yii::error("Default role 'user' not found during signup for user ID {$user->getId()}.");
+            }
+            return $user;
+        }
+
+        return null;
     }
 }

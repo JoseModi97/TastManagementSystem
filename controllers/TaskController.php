@@ -32,56 +32,63 @@ class TaskController extends Controller
             'access' => [
                 'class' => AccessControl::class,
                 'rules' => [
-                    [
+                    [ // All actions require authenticated user
                         'allow' => true,
-                        'roles' => ['@'], // Allow authenticated users
+                        'roles' => ['@'],
                     ],
+                    // Specific permissions will be checked within actions
                 ],
             ],
         ];
     }
 
     /**
-     * Lists all Task models for a specific project or all tasks if no project_id.
+     * Lists all Task models.
+     * If project_id is given, tasks for that project are listed (user must own project).
+     * Otherwise, a global list of tasks (related to user by project ownership or assignment) is shown.
+     * 'viewTask' permission is implicitly required by '@' role, actual filtering done in logic.
      * @param int|null $project_id
      * @return mixed
+     * @throws ForbiddenHttpException
+     * @throws NotFoundHttpException
      */
     public function actionIndex($project_id = null)
     {
         $searchModel = new TaskSearch();
         $queryParams = Yii::$app->request->queryParams;
+        $project = null;
 
         if ($project_id !== null) {
-            $project = $this->findProjectModel($project_id); // Ensure project exists
-            // Check if current user is the creator of the project
-            if ($project->created_by !== Yii::$app->user->id) {
-                throw new ForbiddenHttpException('You are not authorized to view tasks for this project.');
+            $project = $this->findProjectModel($project_id);
+            // Check if current user can view tasks for this project (e.g. is owner)
+            // This uses a simplified check; RBAC 'viewProject' would be better
+            if (!Yii::$app->user->can('updateOwnProject', ['project' => $project]) && !Yii::$app->user->can('admin')) {
+                 throw new ForbiddenHttpException('You are not authorized to view tasks for this project.');
             }
             $queryParams['TaskSearch']['project_id'] = $project_id;
-            $this->view->params['project'] = $project; // Pass project to view for context
+            $this->view->params['project'] = $project;
             $dataProvider = $searchModel->search($queryParams);
         } else {
-            // Global task list: Modify query to only show tasks from projects created by the current user
-            // or tasks directly assigned to the current user.
+            // Global task list: Filter for tasks in user's projects or assigned to user
+            // This logic is already in place from previous step
             $dataProvider = $searchModel->search($queryParams);
-            $dataProvider->query->joinWith('project as p') // Alias project table to 'p'
+            $dataProvider->query->joinWith('project as p')
                                 ->andWhere(['OR',
                                     ['p.created_by' => Yii::$app->user->id],
                                     ['task.assigned_to' => Yii::$app->user->id]
                                 ]);
         }
 
-        // $dataProvider = $searchModel->search($queryParams); // This line is now conditional
-
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
-            'project' => $project ?? null,
+            'project' => $project, // Pass $project which might be null
         ]);
     }
 
     /**
      * Displays a single Task model.
+     * User must have 'viewTask' permission (or be project owner).
      * @param int $id ID
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
@@ -90,8 +97,10 @@ class TaskController extends Controller
     public function actionView($id)
     {
         $model = $this->findModel($id);
-        // Ensure user can only view tasks from their projects
-        if ($model->project->created_by !== Yii::$app->user->id) {
+        // Check if user can view this task (is project owner or has 'viewTask' permission)
+        if (!Yii::$app->user->can('viewTask', ['task' => $model]) &&
+            !Yii::$app->user->can('updateOwnProject', ['project' => $model->project]) && // Project owner check
+            !Yii::$app->user->can('admin')) {
             throw new ForbiddenHttpException('You are not authorized to view this task.');
         }
         return $this->render('view', [
@@ -101,25 +110,27 @@ class TaskController extends Controller
 
     /**
      * Creates a new Task model.
-     * If creation is successful, the browser will be redirected to the 'view' page or project view.
+     * User must have 'createTask' permission and be able to modify the project (e.g. project owner).
      * @param int $project_id The ID of the project this task belongs to.
      * @return mixed
      * @throws NotFoundHttpException if the project cannot be found
-     * @throws ForbiddenHttpException if user is not authorized to add task to this project
+     * @throws ForbiddenHttpException if user is not authorized
      */
     public function actionCreate($project_id)
     {
         $project = $this->findProjectModel($project_id);
-        if ($project->created_by !== Yii::$app->user->id) {
+        // User must have 'createTask' AND be able to modify this specific project (e.g. owner)
+        if (!Yii::$app->user->can('createTask') ||
+            (!Yii::$app->user->can('updateOwnProject', ['project' => $project]) && !Yii::$app->user->can('admin'))) {
             throw new ForbiddenHttpException('You are not authorized to add tasks to this project.');
         }
 
         $model = new Task();
-        $model->project_id = $project_id; // Pre-assign project_id
+        $model->project_id = $project_id;
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             Yii::$app->session->setFlash('success', 'Task created successfully.');
-            return $this->redirect(['project/view', 'id' => $project_id]); // Redirect to project view
+            return $this->redirect(['project/view', 'id' => $project_id]);
         }
 
         return $this->render('create', [
@@ -130,7 +141,7 @@ class TaskController extends Controller
 
     /**
      * Updates an existing Task model.
-     * If update is successful, the browser will be redirected to the 'view' page or project view.
+     * User must have 'updateTask' (admin) or 'updateOwnTask' (project owner for tasks in their project).
      * @param int $id ID
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
@@ -139,13 +150,15 @@ class TaskController extends Controller
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
-        if ($model->project->created_by !== Yii::$app->user->id) {
+        // User must have general 'updateTask' or specific 'updateOwnTask' for this task (via project ownership)
+        if (!Yii::$app->user->can('updateTask', ['task' => $model]) &&
+            !Yii::$app->user->can('updateOwnTask', ['task' => $model])) { // 'task' => $model for AuthorRule on project
             throw new ForbiddenHttpException('You are not authorized to update this task.');
         }
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             Yii::$app->session->setFlash('success', 'Task updated successfully.');
-            return $this->redirect(['project/view', 'id' => $model->project_id]); // Redirect to project view
+            return $this->redirect(['project/view', 'id' => $model->project_id]);
         }
 
         return $this->render('update', [
@@ -156,7 +169,7 @@ class TaskController extends Controller
 
     /**
      * Deletes an existing Task model.
-     * If deletion is successful, the browser will be redirected to the 'index' or project view page.
+     * User must have 'deleteTask' (admin) or 'deleteOwnTask' (project owner for tasks in their project).
      * @param int $id ID
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
@@ -165,9 +178,10 @@ class TaskController extends Controller
     public function actionDelete($id)
     {
         $model = $this->findModel($id);
-        $project_id = $model->project_id; // Store before deleting
+        $project_id = $model->project_id;
 
-        if ($model->project->created_by !== Yii::$app->user->id) {
+        if (!Yii::$app->user->can('deleteTask', ['task' => $model]) &&
+            !Yii::$app->user->can('deleteOwnTask', ['task' => $model])) { // 'task' => $model for AuthorRule on project
             throw new ForbiddenHttpException('You are not authorized to delete this task.');
         }
 
@@ -177,7 +191,7 @@ class TaskController extends Controller
             Yii::$app->session->setFlash('error', 'Error deleting task.');
         }
 
-        return $this->redirect(['project/view', 'id' => $project_id]); // Redirect to project view
+        return $this->redirect(['project/view', 'id' => $project_id]);
     }
 
     /**

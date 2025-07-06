@@ -108,7 +108,11 @@ $config = [
             ],
         ],
         'db' => $db,
-
+        'authManager' => [
+            'class' => 'yii\rbac\DbManager',
+            // uncomment if you want to cache RBAC items (requires cache component)
+            // 'cache' => 'cache',
+        ],
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
