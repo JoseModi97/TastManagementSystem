@@ -9,7 +9,9 @@ use yii\web\Response;
 use yii\filters\VerbFilter;
 use app\models\LoginForm;
 use app\models\ContactForm;
-use app\models\SignupForm; // Added SignupForm
+use app\models\SignupForm;
+use app\models\Project; // Added for dashboard
+use app\models\Task; // Added for dashboard
 
 class SiteController extends Controller
 {
@@ -62,7 +64,41 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        return $this->render('index');
+        if (Yii::$app->user->isGuest) {
+            return $this->render('index');
+        }
+
+        // For logged-in users, show dashboard
+        $userId = Yii::$app->user->id;
+
+        $projectCount = Project::find()->where(['created_by' => $userId])->count();
+        $tasksAssignedCount = Task::find()->where(['assigned_to' => $userId])->count();
+
+        // More complex: tasks in user's projects that are not done
+        $activeTasksInOwnedProjectsCount = Task::find()
+            ->joinWith('project p')
+            ->joinWith('status s')
+            ->where(['p.created_by' => $userId])
+            ->andWhere(['!=', 's.label', 'Done']) // Assuming 'Done' is the label for completed status
+            ->count();
+
+        // Recently Due Tasks (e.g., due in next 7 days or overdue, assigned to user)
+        $recentlyDueTasks = Task::find()
+            ->where(['assigned_to' => $userId])
+            ->andWhere(['is not', 'due_date', null])
+            ->andWhere(['<=', 'due_date', date('Y-m-d H:i:s', strtotime('+7 days'))])
+            ->joinWith('status s') // to exclude done tasks
+            ->andWhere(['!=', 's.label', 'Done'])
+            ->orderBy(['due_date' => SORT_ASC])
+            ->limit(5)
+            ->all();
+
+        return $this->render('dashboard', [
+            'projectCount' => $projectCount,
+            'tasksAssignedCount' => $tasksAssignedCount,
+            'activeTasksInOwnedProjectsCount' => $activeTasksInOwnedProjectsCount,
+            'recentlyDueTasks' => $recentlyDueTasks,
+        ]);
     }
 
     /**
