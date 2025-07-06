@@ -2,8 +2,8 @@
 
 return [
     'class' => 'yii\db\Connection',
-    'dsn' => 'sqlite:@app/config/task.db',
-    'username' => '',
+    'dsn' => 'mysql:host=localhost;dbname=task',
+    'username' => 'root',
     'password' => '',
     'charset' => 'utf8',
 
