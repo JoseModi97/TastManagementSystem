@@ -53,20 +53,25 @@ class TaskController extends Controller
 
         if ($project_id !== null) {
             $project = $this->findProjectModel($project_id); // Ensure project exists
-             // Check if current user is the creator of the project
+            // Check if current user is the creator of the project
             if ($project->created_by !== Yii::$app->user->id) {
                 throw new ForbiddenHttpException('You are not authorized to view tasks for this project.');
             }
             $queryParams['TaskSearch']['project_id'] = $project_id;
             $this->view->params['project'] = $project; // Pass project to view for context
+            $dataProvider = $searchModel->search($queryParams);
         } else {
-            // Optionally, if you want a global task list, ensure users can only see their relevant tasks.
-            // For now, let's assume tasks are primarily viewed in project context or a user-specific context.
-            // If listing all tasks, you might want to filter by tasks assigned to user or in projects they own.
-            // $queryParams['TaskSearch']['assigned_to'] = Yii::$app->user->id; // Example
+            // Global task list: Modify query to only show tasks from projects created by the current user
+            // or tasks directly assigned to the current user.
+            $dataProvider = $searchModel->search($queryParams);
+            $dataProvider->query->joinWith('project as p') // Alias project table to 'p'
+                                ->andWhere(['OR',
+                                    ['p.created_by' => Yii::$app->user->id],
+                                    ['task.assigned_to' => Yii::$app->user->id]
+                                ]);
         }
 
-        $dataProvider = $searchModel->search($queryParams);
+        // $dataProvider = $searchModel->search($queryParams); // This line is now conditional
 
         return $this->render('index', [
             'searchModel' => $searchModel,

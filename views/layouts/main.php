@@ -46,7 +46,8 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         $navItems[] = ['label' => 'Signup', 'url' => ['/site/signup']];
         $navItems[] = ['label' => 'Login', 'url' => ['/site/login']];
     } else {
-        $navItems[] = ['label' => 'Projects', 'url' => ['/project/index']]; // Added Projects link
+        $navItems[] = ['label' => 'Projects', 'url' => ['/project/index']];
+        $navItems[] = ['label' => 'Tasks', 'url' => ['/task/index']]; // Added Tasks link
         $navItems[] = '<li class="nav-item">'
             . Html::beginForm(['/site/logout'])
             . Html::submitButton(
