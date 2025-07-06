@@ -23,13 +23,21 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::class,
-                'only' => ['logout'],
+                'only' => ['logout', 'index'], // Index is now also controlled for dashboard
                 'rules' => [
                     [
-                        'actions' => ['logout'],
+                        'actions' => ['logout', 'index'], // Logged in users can access index (dashboard) and logout
                         'allow' => true,
                         'roles' => ['@'],
                     ],
+                    // Login, Signup, About, Contact, Error are implicitly allowed for guests if not listed here
+                    // and no default deny rule is present.
+                    // For explicit guest access to index (if it were not a dashboard):
+                    // [
+                    // 'actions' => ['index', 'login', 'signup', 'contact', 'about', 'error', 'captcha'],
+                    // 'allow' => true,
+                    // 'roles' => ['?'], // Guest users
+                    // ],
                 ],
             ],
             'verbs' => [
