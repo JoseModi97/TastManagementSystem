@@ -55,9 +55,12 @@ class UserFixture extends ActiveFixture
     // }
 
     // Or, more commonly, set $dataFile directly:
-    public function init()
-    {
-        parent::init();
-        $this->dataFile = Yii::getAlias('@tests/unit/fixtures/data/user.php');
-    }
+    // public function init()
+    // {
+    //     parent::init();
+    //     // $this->dataFile = Yii::getAlias('@tests/unit/fixtures/data/user.php');
+    // }
+    // Let's try setting $dataFile as a public property to see if it changes instantiation timing issues.
+    // And use a more direct relative path approach for dataFile if Yii aliases are problematic during early instantiation.
+    public $dataFile = __DIR__ . '/data/user.php';
 }
