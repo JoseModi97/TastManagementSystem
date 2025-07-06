@@ -59,4 +59,32 @@ $this->params['breadcrumbs'][] = $this->title;
         ],
     ]) ?>
 
+    <hr>
+    <h3>Task History</h3>
+    <?php $taskHistories = $model->taskHistories; // Use the relation ?>
+    <?php if (!empty($taskHistories)): ?>
+        <ul class="list-group">
+            <?php foreach ($taskHistories as $historyEntry): ?>
+                <li class="list-group-item">
+                    <small class="text-muted float-end"><?= Yii::$app->formatter->asRelativeTime($historyEntry->changed_at) ?></small>
+                    <strong><?= Html::encode($historyEntry->user ? $historyEntry->user->username : 'System') ?></strong>
+                    changed <strong><?= Html::encode(ucwords(str_replace('_', ' ', $historyEntry->attribute))) ?></strong>
+                    <?php
+                        $oldVal = $historyEntry->old_value_label ?: ($historyEntry->old_value ?: 'empty');
+                        $newVal = $historyEntry->new_value_label ?: ($historyEntry->new_value ?: 'empty');
+                        if (empty(trim((string)$historyEntry->new_value_label)) && empty(trim((string)$historyEntry->new_value))) {
+                            $newVal = 'empty';
+                        }
+                    ?>
+                    from "<?= Html::encode($oldVal) ?>"
+                    to "<?= Html::encode($newVal) ?>"
+                    <br>
+                    <small class="text-muted"><?= Yii::$app->formatter->asDatetime($historyEntry->changed_at) ?></small>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php else: ?>
+        <p>No history found for this task.</p>
+    <?php endif; ?>
+
 </div>
