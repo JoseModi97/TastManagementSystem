@@ -46,6 +46,11 @@ class Task extends ActiveRecord
     {
         return [
             TimestampBehavior::class,
+            [
+                'class' => \app\behaviors\TaskChangeBehavior::class,
+                // Optionally configure attributesToTrack if different from default
+                // 'attributesToTrack' => ['title', 'status_id', ...],
+            ],
         ];
     }
 
@@ -124,5 +129,15 @@ class Task extends ActiveRecord
     public function getStatus()
     {
         return $this->hasOne(TaskStatus::class, ['id' => 'status_id']);
+    }
+
+    /**
+     * Gets query for [[TaskHistories]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTaskHistories()
+    {
+        return $this->hasMany(TaskHistory::class, ['task_id' => 'id'])->orderBy(['changed_at' => SORT_DESC]);
     }
 }
