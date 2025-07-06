@@ -29,7 +29,7 @@ $this->params['breadcrumbs'][] = 'Assign Roles';
     <?php $form = ActiveForm::begin(); ?>
 
     <?= $form->field($roleAssignmentModel, 'roles[]')->checkboxList($allRolesList, [
-        'item' => function ($index, $label, $name, $checked, $value) {
+        'item' => function ($index, $label, $name, $checked, $value) use ($roleAssignmentModel) { // Added: use ($roleAssignmentModel)
             // $label here is the role description, $value is the role name
             return Html::checkbox($name, $checked, [
                 'value' => $value,
