@@ -37,17 +37,23 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
         'brandUrl' => Yii::$app->homeUrl,
         'options' => ['class' => 'navbar-expand-md navbar-dark bg-dark fixed-top']
     ]);
-    $navItems = [
-        ['label' => 'Home', 'url' => ['/site/index']],
-        ['label' => 'About', 'url' => ['/site/about']],
-        ['label' => 'Contact', 'url' => ['/site/contact']],
-    ];
+    $navItems = [];
     if (Yii::$app->user->isGuest) {
+        $navItems[] = ['label' => 'Home', 'url' => ['/site/index']];
+        $navItems[] = ['label' => 'About', 'url' => ['/site/about']];
+        $navItems[] = ['label' => 'Contact', 'url' => ['/site/contact']];
         $navItems[] = ['label' => 'Signup', 'url' => ['/site/signup']];
         $navItems[] = ['label' => 'Login', 'url' => ['/site/login']];
     } else {
+        $navItems[] = ['label' => 'Dashboard', 'url' => ['/site/index']];
         $navItems[] = ['label' => 'Projects', 'url' => ['/project/index']];
-        $navItems[] = ['label' => 'Tasks', 'url' => ['/task/index']]; // Added Tasks link
+        $navItems[] = ['label' => 'Tasks', 'url' => ['/task/index']];
+        if (Yii::$app->user->can('admin')) {
+            $navItems[] = ['label' => 'User Management', 'url' => ['/user-management/index']];
+        }
+        // Common items for logged-in users, could also include About/Contact if desired
+        $navItems[] = ['label' => 'About', 'url' => ['/site/about']]; // Adding About for logged-in users too
+        $navItems[] = ['label' => 'Contact', 'url' => ['/site/contact']]; // Adding Contact for logged-in users too
         $navItems[] = '<li class="nav-item">'
             . Html::beginForm(['/site/logout'])
             . Html::submitButton(

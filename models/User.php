@@ -145,4 +145,29 @@ class User extends ActiveRecord implements IdentityInterface
     {
         $this->auth_key = Yii::$app->security->generateRandomString();
     }
+
+    /**
+     * Gets the roles assigned to the user.
+     * @return \yii\rbac\Role[]
+     */
+    public function getRoles()
+    {
+        $authManager = Yii::$app->authManager;
+        return $authManager->getRolesByUser($this->getId());
+    }
+
+    /**
+     * Returns a string representation of the user's roles.
+     * @return string
+     */
+    public function getRoleNames()
+    {
+        $roles = $this->getRoles();
+        if (empty($roles)) {
+            return 'No roles assigned';
+        }
+        return implode(', ', array_map(function ($role) {
+            return $role->description ?: $role->name; // Prefer description over name
+        }, $roles));
+    }
 }
