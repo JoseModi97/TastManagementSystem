@@ -67,6 +67,9 @@ $config = [
 
             ],
         ],
+        'api' => [ // Added API module
+            'class' => 'app\modules\api\Module',
+        ],
     ],
     'components' => [
         'i18n' => [
