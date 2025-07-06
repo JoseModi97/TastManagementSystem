@@ -119,7 +119,27 @@ $config = [
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
-            'rules' => [],
+            'rules' => [
+                // Standard web rules (if any) would go here or remain if already present
+                // Example: '<controller:\w+>/<action:\w+>' => '<controller>/<action>',
+
+                // API v1 rules
+                [
+                    'class' => 'yii\rest\UrlRule',
+                    'controller' => [
+                        'api/v1/project' => 'api/project', //  /api/v1/projects routes to api/project controller
+                        'api/v1/task'    => 'api/task',    //  /api/v1/tasks routes to api/task controller
+                    ],
+                    'pluralize' => true, // Default is true, so /api/v1/project maps to 'projects' endpoint
+                    'extraPatterns' => [ // Optional: for custom actions not covered by REST standard
+                        // 'GET <id>/tasks' => 'tasks', // Example for ProjectController's actionTasks($id)
+                    ],
+                    // 'tokens' => [ // Optional: if you need to customize <id> pattern
+                    //     '{id}' => '<id:\\d[\\d,]*>',
+                    // ]
+                ],
+                // Add other non-API rules below or above the API rule block as needed.
+            ],
         ],
 
     ],
