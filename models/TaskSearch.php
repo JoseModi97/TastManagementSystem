@@ -48,7 +48,9 @@ class TaskSearch extends Task
         $query = Task::find();
 
         // Important: join with related tables to enable sorting/filtering by related data
-        $query->joinWith(['project', 'assignedTo', 'priority', 'status']);
+        // Aliasing to avoid conflicts if 'project' is joined again in controller
+        $query->joinWith(['project p', 'assignedTo u', 'priority pri', 'status s']);
+
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -60,23 +62,23 @@ class TaskSearch extends Task
                     'due_date',
                     'created_at',
                     'projectName' => [
-                        'asc' => ['project.name' => SORT_ASC],
-                        'desc' => ['project.name' => SORT_DESC],
+                        'asc' => ['p.name' => SORT_ASC], // Use alias
+                        'desc' => ['p.name' => SORT_DESC], // Use alias
                         'label' => 'Project'
                     ],
                     'assignedToUsername' => [
-                        'asc' => ['user.username' => SORT_ASC],
-                        'desc' => ['user.username' => SORT_DESC],
+                        'asc' => ['u.username' => SORT_ASC], // Use alias
+                        'desc' => ['u.username' => SORT_DESC], // Use alias
                         'label' => 'Assigned To'
                     ],
                     'priorityLabel' => [
-                        'asc' => ['task_priority.label' => SORT_ASC],
-                        'desc' => ['task_priority.label' => SORT_DESC],
+                        'asc' => ['pri.label' => SORT_ASC], // Use alias
+                        'desc' => ['pri.label' => SORT_DESC], // Use alias
                         'label' => 'Priority'
                     ],
                     'statusLabel' => [
-                        'asc' => ['task_status.label' => SORT_ASC],
-                        'desc' => ['task_status.label' => SORT_DESC],
+                        'asc' => ['s.label' => SORT_ASC], // Use alias
+                        'desc' => ['s.label' => SORT_DESC], // Use alias
                         'label' => 'Status'
                     ],
                 ],
@@ -112,10 +114,10 @@ class TaskSearch extends Task
 
         $query->andFilterWhere(['like', 'task.title', $this->title])
             ->andFilterWhere(['like', 'task.description', $this->description])
-            ->andFilterWhere(['like', 'project.name', $this->projectName])
-            ->andFilterWhere(['like', 'user.username', $this->assignedToUsername])
-            ->andFilterWhere(['like', 'task_priority.label', $this->priorityLabel])
-            ->andFilterWhere(['like', 'task_status.label', $this->statusLabel]);
+            ->andFilterWhere(['like', 'p.name', $this->projectName]) // Use alias
+            ->andFilterWhere(['like', 'u.username', $this->assignedToUsername]) // Use alias
+            ->andFilterWhere(['like', 'pri.label', $this->priorityLabel]) // Use alias
+            ->andFilterWhere(['like', 's.label', $this->statusLabel]); // Use alias
 
 
         return $dataProvider;
