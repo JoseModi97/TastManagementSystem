@@ -57,9 +57,9 @@ $this->params['breadcrumbs'][] = $this->title;
                 ])->dropDownList(ArrayHelper::map(User::find()->orderBy('username')->all(), 'id', 'username'), ['prompt' => 'Any User']) ?>
             </div>
             <div class="col-md-3 mb-2">
-                <div class="form-group"> {/* Encapsulate buttons for proper alignment and spacing */}
+                <div class="form-group"> <?php /* Encapsulate buttons for proper alignment and spacing */?>
                     <?= Html::submitButton('Filter Tasks', ['class' => 'btn btn-primary btn-sm']) ?>
-                    <?= Html::a('Reset Filters', ['report/project-tasks'], ['class' => 'btn btn-outline-secondary btn-sm ml-2']) ?> {/* Increased margin for reset button */}
+                    <?= Html::a('Reset Filters', ['report/project-tasks'], ['class' => 'btn btn-outline-secondary btn-sm ml-2']) /* Increased margin for reset button */?>
                 </div>
             </div>
         </div>
