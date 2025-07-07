@@ -66,12 +66,6 @@ $this->title = 'Create an Account';
             <?= Html::submitButton('Register Account', ['class' => 'btn btn-primary btn-user btn-block', 'name' => 'signup-button']) ?>
 
             <hr>
-            <a href="#" class="btn btn-google btn-user btn-block disabled"> {/* Placeholder for OAuth */}
-                <i class="fab fa-google fa-fw"></i> Register with Google
-            </a>
-            <a href="#" class="btn btn-facebook btn-user btn-block disabled"> {/* Placeholder for OAuth */}
-                <i class="fab fa-facebook-f fa-fw"></i> Register with Facebook
-            </a>
             <?php ActiveForm::end(); ?>
             <hr>
             <div class="text-center">
