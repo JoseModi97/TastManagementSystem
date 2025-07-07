@@ -1,6 +1,6 @@
 <?php
 
-use yii\grid\GridView;
+use kartik\grid\GridView;
 
 /* @var $panel yii\debug\panels\UserPanel */
 

@@ -1,7 +1,7 @@
 <?php
 
 use yii\helpers\Html;
-use yii\grid\GridView;
+use kartik\grid\GridView;
 use yii\bootstrap5\Progress; // Using Bootstrap 5 Progress bar
 
 /* @var $this yii\web\View */

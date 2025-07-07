@@ -1,7 +1,7 @@
 <?php
 
 use yii\helpers\Html;
-use yii\grid\GridView;
+use kartik\grid\GridView;
 
 /* @var $panel yii\debug\panels\DumpPanel */
 /* @var $searchModel yii\debug\models\search\Log */
