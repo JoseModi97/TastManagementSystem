@@ -110,7 +110,99 @@ class SiteController extends Controller
             'overallTaskStatusData' => $this->getOverallTaskStatusData(),
             'tasksNearingDeadlineData' => $this->getTasksNearingDeadlineData(),
             'userTaskLoadData' => $this->getUserTaskLoadData(),
+            'projectProgressData' => $this->getProjectProgressData(),
+            'taskPriorityData' => $this->getTaskPriorityData(),
         ]);
+    }
+
+    private function getProjectProgressData($projectLimit = 10)
+    {
+        $projects = Project::find()->with(['tasks.status'])->orderBy(['created_at' => SORT_DESC])->limit($projectLimit)->all();
+        $progressData = [];
+
+        $doneStatusId = \app\models\TaskStatus::findOne(['label' => 'Done'])->id ?? null;
+
+        $labels = [];
+        $percentages = [];
+        $backgroundColors = [];
+        $borderColors = [];
+        $colorPalette = [
+            ['bg' => 'rgba(255, 99, 132, 0.5)', 'border' => 'rgba(255, 99, 132, 1)'],
+            ['bg' => 'rgba(54, 162, 235, 0.5)', 'border' => 'rgba(54, 162, 235, 1)'],
+            ['bg' => 'rgba(255, 206, 86, 0.5)', 'border' => 'rgba(255, 206, 86, 1)'],
+            ['bg' => 'rgba(75, 192, 192, 0.5)', 'border' => 'rgba(75, 192, 192, 1)'],
+            ['bg' => 'rgba(153, 102, 255, 0.5)', 'border' => 'rgba(153, 102, 255, 1)'],
+            ['bg' => 'rgba(255, 159, 64, 0.5)', 'border' => 'rgba(255, 159, 64, 1)'],
+        ];
+        $colorIndex = 0;
+
+        foreach ($projects as $project) {
+            /** @var Project $project */
+            $totalProjectTasks = count($project->tasks);
+            $doneTasksCount = 0;
+
+            foreach ($project->tasks as $task) {
+                /** @var Task $task */
+                if ($task->status_id == $doneStatusId) {
+                    $doneTasksCount++;
+                }
+            }
+
+            $percentageComplete = ($totalProjectTasks > 0) ? round(($doneTasksCount / $totalProjectTasks) * 100, 0) : 0;
+
+            $labels[] = $project->name;
+            $percentages[] = $percentageComplete;
+
+            $color = $colorPalette[$colorIndex % count($colorPalette)];
+            $backgroundColors[] = $color['bg'];
+            $borderColors[] = $color['border'];
+            $colorIndex++;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $percentages,
+            'backgroundColors' => $backgroundColors,
+            'borderColors' => $borderColors,
+        ];
+    }
+
+    private function getTaskPriorityData()
+    {
+        $priorities = \app\models\TaskPriority::find()->with('tasks')->orderBy('weight DESC')->all();
+        $priorityData = [];
+        $totalTasks = 0;
+
+        $labels = [];
+        $counts = [];
+        // Using a predefined set of colors, similar to getOverallTaskStatusData
+        $backgroundColors = ['#f6c23e', '#e74a3b', '#36b9cc', '#1cc88a', '#4e73df', '#858796']; // Example colors
+        $hoverBackgroundColors = ['#dda20a', '#c73e28', '#2c9faf', '#17a673', '#2e59d9', '#606268'];
+        $colorIndex = 0;
+
+        foreach ($priorities as $priority) {
+            $taskCount = count($priority->tasks);
+            $labels[] = $priority->label;
+            $counts[] = $taskCount;
+            $totalTasks += $taskCount;
+        }
+
+        // Ensure we have enough colors, repeat if necessary, or use a color generation function
+        $finalBackgroundColors = [];
+        $finalHoverBackgroundColors = [];
+        for ($i = 0; $i < count($labels); $i++) {
+            $finalBackgroundColors[] = $backgroundColors[$i % count($backgroundColors)];
+            $finalHoverBackgroundColors[] = $hoverBackgroundColors[$i % count($hoverBackgroundColors)];
+        }
+
+
+        return [
+            'labels' => $labels,
+            'counts' => $counts,
+            'backgroundColors' => $finalBackgroundColors,
+            'hoverBackgroundColors' => $finalHoverBackgroundColors,
+            'totalTasks' => $totalTasks, // Useful for percentage calculation in tooltips
+        ];
     }
 
     private function getOverallTaskStatusData()

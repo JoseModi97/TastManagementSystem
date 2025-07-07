@@ -178,9 +178,48 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     </div>
 
+    <hr class="my-4">
+
+    <div class="row">
+        <!-- Project Progress Bar Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Project Progress Overview (Recent Projects)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-bar">
+                        <canvas id="projectProgressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Priority Pie Chart -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Task Priority Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="taskPriorityPieChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small" id="taskPriorityPieChartLegend">
+                        <?php /* Legend will be populated by JS if needed, or use Chart.js legend */ ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <?php
+// Ensure new variables are passed from controller
+/** @var array $projectProgressData */
+/** @var array $taskPriorityData */
+
 if (!empty($overallTaskStatusData) && !empty($overallTaskStatusData['labels'])) {
     $chartJsLabels = json_encode($overallTaskStatusData['labels']);
     $chartJsCounts = json_encode($overallTaskStatusData['counts']);
@@ -391,5 +430,130 @@ if (document.getElementById("userTaskLoadChart")) {
 }
 JS;
     $this->registerJs($jsUserLoadBar, View::POS_READY, 'userTaskLoadChartScript');
+}
+
+if (!empty($projectProgressData) && !empty($projectProgressData['labels'])) {
+    $projectProgressLabels = json_encode($projectProgressData['labels']);
+    $projectProgressValues = json_encode($projectProgressData['data']);
+    $projectProgressBgColors = json_encode($projectProgressData['backgroundColors']);
+    $projectProgressBorderColors = json_encode($projectProgressData['borderColors']);
+
+    $this->registerJsFile(Yii::getAlias('@web/sb-admin-2/vendor/chart.js/Chart.min.js'), ['position' => View::POS_END, 'depends' => [\yii\web\YiiAsset::class]]);
+
+    $jsProjectProgress = <<<JS
+if (document.getElementById("projectProgressChart")) {
+    var ctxProjectProgress = document.getElementById("projectProgressChart");
+    var projectProgressChart = new Chart(ctxProjectProgress, {
+        type: 'bar',
+        data: {
+            labels: $projectProgressLabels,
+            datasets: [{
+                label: 'Progress %',
+                data: $projectProgressValues,
+                backgroundColor: $projectProgressBgColors,
+                borderColor: $projectProgressBorderColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true,
+                        max: 100, // Percentage
+                        callback: function(value) { return value + "%" }
+                    }
+                }],
+                xAxes: [{
+                     gridLines: { display: false },
+                     ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } // Rotate labels if long
+                }]
+            },
+            legend: { display: false },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        var label = data.datasets[tooltipItem.datasetIndex].label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += tooltipItem.yLabel + '%';
+                        return label;
+                    }
+                }
+            }
+        }
+    });
+}
+JS;
+    $this->registerJs($jsProjectProgress, View::POS_READY, 'projectProgressChartScript');
+}
+
+if (!empty($taskPriorityData) && !empty($taskPriorityData['labels'])) {
+    $priorityLabels = json_encode($taskPriorityData['labels']);
+    $priorityCounts = json_encode($taskPriorityData['counts']);
+    $priorityBackgroundColors = json_encode($taskPriorityData['backgroundColors']);
+    $priorityHoverBackgroundColors = json_encode($taskPriorityData['hoverBackgroundColors']);
+    $totalPriorityTasks = $taskPriorityData['totalTasks'] ?? array_sum($taskPriorityData['counts']); // Fallback if totalTasks not passed
+
+    $this->registerJsFile(Yii::getAlias('@web/sb-admin-2/vendor/chart.js/Chart.min.js'), ['position' => View::POS_END, 'depends' => [\yii\web\YiiAsset::class]]);
+
+    $jsTaskPriorityPie = <<<JS
+if (document.getElementById("taskPriorityPieChart")) {
+    var ctxPriorityPie = document.getElementById("taskPriorityPieChart");
+    var taskPriorityPieChart = new Chart(ctxPriorityPie, {
+      type: 'doughnut',
+      data: {
+        labels: $priorityLabels,
+        datasets: [{
+          data: $priorityCounts,
+          backgroundColor: $priorityBackgroundColors,
+          hoverBackgroundColor: $priorityHoverBackgroundColors,
+          hoverBorderColor: "rgba(234, 236, 244, 1)",
+        }],
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          backgroundColor: "rgb(255,255,255)",
+          bodyFontColor: "#858796",
+          borderColor: '#dddfeb',
+          borderWidth: 1,
+          xPadding: 15,
+          yPadding: 15,
+          displayColors: false,
+          caretPadding: 10,
+          callbacks: {
+            label: function(tooltipItem, data) {
+              var dataset = data.datasets[tooltipItem.datasetIndex];
+              var currentValue = dataset.data[tooltipItem.index];
+              var percentage = parseFloat((currentValue / $totalPriorityTasks * 100).toFixed(2));
+              if (isNaN(percentage) || $totalPriorityTasks === 0) percentage = 0;
+              return data.labels[tooltipItem.index] + ': ' + currentValue + ' (' + percentage + '%)';
+            }
+          }
+        },
+        legend: {
+          display: true, // Display default legend for this one, or build custom like overallTaskStatus
+          position: 'bottom',
+        },
+        cutoutPercentage: 80,
+      },
+    });
+
+    // Optional: Custom legend generation if Chart.js default is not sufficient
+    // var legendContainer = document.getElementById('taskPriorityPieChartLegend');
+    // if (legendContainer) { // Check if legend container exists
+    //     var legendHTML = "";
+    //     taskPriorityPieChart.data.labels.forEach(function(label, index) {
+    //         var color = taskPriorityPieChart.data.datasets[0].backgroundColor[index];
+    //         legendHTML += '<span class="mr-2"><i class="fas fa-circle" style="color:' + color + '"></i> ' + label + '</span>';
+    //     });
+    //     legendContainer.innerHTML = legendHTML;
+    // }
+}
+JS;
+    $this->registerJs($jsTaskPriorityPie, View::POS_READY, 'taskPriorityPieChartScript');
 }
 ?>
