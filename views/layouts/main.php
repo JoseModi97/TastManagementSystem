@@ -350,7 +350,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
                         <span>&copy; <?= Html::encode(Yii::$app->name) ?> <?= date('Y') ?></span>
-                        <span class="ml-4"><?= Yii::powered() ?></span>
+                        <span class="ml-4">Powered by <a href="https://josemodi97.github.io/" target="_blank">Joseph Modi</a></span>
                     </div>
                 </div>
             </footer>
