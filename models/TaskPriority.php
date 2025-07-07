@@ -55,4 +55,14 @@ class TaskPriority extends ActiveRecord
     {
         return ArrayHelper::map(static::find()->orderBy('weight ASC, label ASC')->all(), 'id', 'label');
     }
+
+    /**
+     * Gets query for [[Tasks]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTasks()
+    {
+        return $this->hasMany(Task::class, ['priority_id' => 'id']);
+    }
 }

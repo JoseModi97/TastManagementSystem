@@ -170,4 +170,14 @@ class User extends ActiveRecord implements IdentityInterface
             return $role->description ?: $role->name; // Prefer description over name
         }, $roles));
     }
+
+    /**
+     * Gets query for [[Tasks]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTasks()
+    {
+        return $this->hasMany(Task::class, ['assigned_to' => 'id']);
+    }
 }

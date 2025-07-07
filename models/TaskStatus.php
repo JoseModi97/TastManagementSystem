@@ -53,4 +53,14 @@ class TaskStatus extends ActiveRecord
         // Could add an order column in the future if specific order is needed
         return ArrayHelper::map(static::find()->orderBy('label ASC')->all(), 'id', 'label');
     }
+
+    /**
+     * Gets query for [[Tasks]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTasks()
+    {
+        return $this->hasMany(Task::class, ['status_id' => 'id']);
+    }
 }

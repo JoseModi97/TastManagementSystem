@@ -104,6 +104,33 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             } else {
                 $menuItems[] = ['label' => 'Projects', 'url' => ['/project/index'], 'icon' => 'fas fa-fw fa-project-diagram'];
                 $menuItems[] = ['label' => 'Tasks', 'url' => ['/task/index'], 'icon' => 'fas fa-fw fa-tasks'];
+
+                // Reports Menu Item
+                $reportMenuItems = [
+                    ['label' => 'User Tasks', 'url' => ['/report/user-tasks']],
+                    ['label' => 'Project Tasks', 'url' => ['/report/project-tasks']],
+                    ['label' => 'Task Status', 'url' => ['/report/task-status']],
+                    ['label' => 'Task Priority', 'url' => ['/report/task-priority']],
+                    ['label' => 'Task History', 'url' => ['/report/task-history']],
+                ];
+                $menuItems[] = [
+                    'label' => 'Reports',
+                    'icon' => 'fas fa-fw fa-chart-bar',
+                    'url' => '#', // Placeholder for collapsible item
+                    'options' => ['class' => 'nav-item'], // Ensure this class is added to the <li>
+                    'linkOptions' => [
+                        'class' => 'nav-link collapsed',
+                        'href' => '#', // Important for collapse functionality
+                        'data-toggle' => 'collapse',
+                        'data-target' => '#collapseReports', // Unique ID for this collapsible menu
+                        'aria-expanded' => 'false', // Start collapsed
+                        'aria-controls' => 'collapseReports'
+                    ],
+                    'items' => $reportMenuItems,
+                    'active' => Yii::$app->controller->id === 'report', // Active if current controller is 'report'
+                ];
+
+
                 if (Yii::$app->user->can('admin')) {
                     $menuItems[] = ['label' => 'User Management', 'url' => ['/user-management/index'], 'icon' => 'fas fa-fw fa-users-cog'];
                 }
