@@ -39,13 +39,15 @@ class ProjectTaskFilter extends Model
      */
     public function filterTasks(array $tasks)
     {
-        if (empty($this->task_title) && empty($this->task_status_id) && empty($this->task_priority_id) && empty($this->task_assigned_to)) {
+        $searchTitle = !empty($this->task_title) ? trim($this->task_title) : null;
+
+        if (empty($searchTitle) && empty($this->task_status_id) && empty($this->task_priority_id) && empty($this->task_assigned_to)) {
             return $tasks;
         }
 
-        return array_filter($tasks, function ($task) {
+        return array_filter($tasks, function ($task) use ($searchTitle) {
             /** @var \app\models\Task $task */
-            if (!empty($this->task_title) && stripos($task->title, $this->task_title) === false) {
+            if (!empty($searchTitle) && stripos($task->title, $searchTitle) === false) {
                 return false;
             }
             if (!empty($this->task_status_id) && $task->status_id != $this->task_status_id) {
