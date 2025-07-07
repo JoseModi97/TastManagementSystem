@@ -175,7 +175,7 @@ $this->registerJs($js);
                     <h6 class="m-0 font-weight-bold text-primary">Task Priority Distribution</h6>
                 </div>
                 <div class="card-body">
-                    <div class="chart-bar" style="height: 320px;"> {/* Adjust height as needed */}
+                    <div class="chart-bar" style="height: 320px;"> <?php /* Adjust height as needed */?>
                         <canvas id="taskPriorityBarChart"></canvas>
                     </div>
                 </div>
