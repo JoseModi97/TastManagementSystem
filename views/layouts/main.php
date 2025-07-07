@@ -25,13 +25,14 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
 <head>
     <title><?= Html::encode($this->title) ?></title>
     <?php
+    // Removed integrity and crossorigin attributes to avoid SRI hash mismatch errors
     $this->registerCssFile("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css", [
-        'integrity' => 'sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr',
-        'crossorigin' => 'anonymous',
+        // 'integrity' => 'sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr',
+        // 'crossorigin' => 'anonymous',
     ]);
     $this->registerJsFile("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js", [
-        'integrity' => 'sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q',
-        'crossorigin' => 'anonymous',
+        // 'integrity' => 'sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q',
+        // 'crossorigin' => 'anonymous',
         'depends' => [\yii\web\JqueryAsset::class],
     ]);
     $this->registerCssFile('@web/css/site-custom.css');
