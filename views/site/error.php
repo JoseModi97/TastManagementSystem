@@ -74,17 +74,45 @@ if ($is404) {
 <?php } else {
     // Default error handling for non-404 errors
     $this->title = $name;
+
+    // Use a layout consistent with the rest of the SB Admin theme for non-404 errors
+    $this->context->layout = 'main'; // Assuming your main SB Admin layout is 'main'
+
 ?>
-    <div class="site-error">
-        <h1><?= Html::encode($this->title) ?></h1>
-        <div class="alert alert-danger">
-            <?= nl2br(Html::encode($message)) ?>
+    <div class="container-fluid">
+
+        <!-- Page Heading -->
+        <h1 class="h3 mb-4 text-gray-800"><?= Html::encode($this->title) ?></h1>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Error Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <?= nl2br(Html::encode($message)) ?>
+                        </div>
+
+                        <?php if (YII_DEBUG && $exception instanceof \Exception): ?>
+                            <hr>
+                            <p><strong>File:</strong> <?= Html::encode($exception->getFile()) ?>:<?= Html::encode($exception->getLine()) ?></p>
+                            <h5>Stack Trace:</h5>
+                            <pre style="white-space: pre-wrap; word-wrap: break-word;"><?= Html::encode($exception->getTraceAsString()) ?></pre>
+                        <?php endif; ?>
+
+                        <hr>
+                        <p>
+                            The above error occurred while the Web server was processing your request.
+                        </p>
+                        <p>
+                            Please contact us if you think this is a server error. Thank you. You can also <a href="<?= Url::home() ?>">return to the homepage</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <p>
-            The above error occurred while the Web server was processing your request.
-        </p>
-        <p>
-            Please contact us if you think this is a server error. Thank you.
-        </p>
+
     </div>
 <?php } ?>
