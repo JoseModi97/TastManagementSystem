@@ -28,6 +28,8 @@ class FakeDataController extends Controller
         $this->stdout("Starting fake data generation...\n");
 
         $transaction = Yii::$app->db->beginTransaction();
+        $fakerUserCredentials = []; // Array to store username:password pairs
+
         try {
             $this->stdout("Generating Users...\n");
             $userIds = [];
@@ -35,18 +37,39 @@ class FakeDataController extends Controller
                 $user = new User();
                 $user->username = $faker->unique()->userName;
                 $user->email = $faker->unique()->email;
-                $user->password_hash = Yii::$app->security->generatePasswordHash($faker->password);
+                $plainPassword = $faker->password(8, 20); // Generate a password
+                $user->password_hash = Yii::$app->security->generatePasswordHash($plainPassword);
                 $user->auth_key = Yii::$app->security->generateRandomString();
                 $user->created_at = time();
                 $user->updated_at = time();
                 if ($user->save()) {
                     $userIds[] = $user->id;
+                    // Store username and plain password for logging
+                    $fakerUserCredentials[] = ['username' => $user->username, 'password' => $plainPassword];
                     $this->stdout("Generated User: {$user->username} (ID: {$user->id})\n", \yii\helpers\Console::FG_GREEN);
                 } else {
                     $this->stderr("Failed to save user: " . print_r($user->errors, true) . "\n", \yii\helpers\Console::FG_RED);
                 }
             }
             $this->stdout("Generated " . count($userIds) . " users.\n\n");
+
+            // Write Faker user credentials to a file
+            if (!empty($fakerUserCredentials)) {
+                $logPath = Yii::getAlias('@runtime/logs');
+                if (!is_dir($logPath)) {
+                    \yii\helpers\FileHelper::createDirectory($logPath);
+                }
+                $credentialFile = $logPath . '/faker_user_credentials.txt';
+                $content = "Faker Generated User Credentials (" . date('Y-m-d H:i:s') . "):\n";
+                foreach ($fakerUserCredentials as $cred) {
+                    $content .= "Username: " . $cred['username'] . ", Password: " . $cred['password'] . "\n";
+                }
+                if (file_put_contents($credentialFile, $content, FILE_APPEND | LOCK_EX)) {
+                    $this->stdout("Faker user credentials saved to: {$credentialFile}\n\n", \yii\helpers\Console::FG_YELLOW);
+                } else {
+                    $this->stderr("Failed to write faker user credentials to: {$credentialFile}\n\n", \yii\helpers\Console::FG_RED);
+                }
+            }
 
             if (empty($userIds)) {
                 $this->stderr("No users were generated. Aborting project and task generation.\n", \yii\helpers\Console::FG_RED);
