@@ -28,32 +28,40 @@ $this->params['breadcrumbs'][] = $this->title;
         <?php $form = ActiveForm::begin([
             'action' => ['report/project-tasks'],
             'method' => 'get',
-            'options' => ['class' => 'form-inline'],
+            // 'options' => ['class' => 'form-inline'], // Removed form-inline
         ]); ?>
 
-        <?= $form->field($taskFilterModel, 'task_title', [
-            'template' => '{input}',
-            'options' => ['class' => 'mr-2 mb-2']
-        ])->textInput(['placeholder' => 'Filter Task Title', 'class' => 'form-control form-control-sm']) ?>
-
-        <?= $form->field($taskFilterModel, 'task_status_id', [
-            'template' => '{input}',
-            'options' => ['class' => 'mr-2 mb-2']
-        ])->dropDownList(ArrayHelper::map(TaskStatus::find()->all(), 'id', 'label'), ['prompt' => 'Any Status', 'class' => 'form-control form-control-sm']) ?>
-
-        <?= $form->field($taskFilterModel, 'task_priority_id', [
-            'template' => '{input}',
-            'options' => ['class' => 'mr-2 mb-2']
-        ])->dropDownList(ArrayHelper::map(TaskPriority::find()->orderBy('weight')->all(), 'id', 'label'), ['prompt' => 'Any Priority', 'class' => 'form-control form-control-sm']) ?>
-
-        <?= $form->field($taskFilterModel, 'task_assigned_to', [
-            'template' => '{input}',
-            'options' => ['class' => 'mr-2 mb-2']
-        ])->dropDownList(ArrayHelper::map(User::find()->orderBy('username')->all(), 'id', 'username'), ['prompt' => 'Any User', 'class' => 'form-control form-control-sm']) ?>
-
-        <div class="form-group mr-2 mb-2">
-            <?= Html::submitButton('Filter Tasks', ['class' => 'btn btn-primary btn-sm']) ?>
-            <?= Html::a('Reset Filters', ['report/project-tasks'], ['class' => 'btn btn-outline-secondary btn-sm ml-1']) ?>
+        <div class="row">
+            <div class="col-md-3 mb-2">
+                <?= $form->field($taskFilterModel, 'task_title', [
+                    'template' => '{input}', // Consider adding {label} if appropriate, or ensure placeholder is clear
+                    'inputOptions' => ['placeholder' => 'Filter Task Title', 'class' => 'form-control form-control-sm']
+                ])->textInput() ?>
+            </div>
+            <div class="col-md-2 mb-2">
+                <?= $form->field($taskFilterModel, 'task_status_id', [
+                    'template' => '{input}',
+                    'inputOptions' => ['class' => 'form-control form-control-sm']
+                ])->dropDownList(ArrayHelper::map(TaskStatus::find()->all(), 'id', 'label'), ['prompt' => 'Any Status']) ?>
+            </div>
+            <div class="col-md-2 mb-2">
+                <?= $form->field($taskFilterModel, 'task_priority_id', [
+                    'template' => '{input}',
+                    'inputOptions' => ['class' => 'form-control form-control-sm']
+                ])->dropDownList(ArrayHelper::map(TaskPriority::find()->orderBy('weight')->all(), 'id', 'label'), ['prompt' => 'Any Priority']) ?>
+            </div>
+            <div class="col-md-2 mb-2">
+                <?= $form->field($taskFilterModel, 'task_assigned_to', [
+                    'template' => '{input}',
+                    'inputOptions' => ['class' => 'form-control form-control-sm']
+                ])->dropDownList(ArrayHelper::map(User::find()->orderBy('username')->all(), 'id', 'username'), ['prompt' => 'Any User']) ?>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="form-group"> {/* Encapsulate buttons for proper alignment and spacing */}
+                    <?= Html::submitButton('Filter Tasks', ['class' => 'btn btn-primary btn-sm']) ?>
+                    <?= Html::a('Reset Filters', ['report/project-tasks'], ['class' => 'btn btn-outline-secondary btn-sm ml-2']) ?> {/* Increased margin for reset button */}
+                </div>
+            </div>
         </div>
 
         <?php ActiveForm::end(); ?>
@@ -97,7 +105,8 @@ $this->params['breadcrumbs'][] = $this->title;
                             . ' (' . Html::encode($task->priority->label ?? 'N/A') . ')'
                             . ($task->assignedTo ? ' - Assigned: ' . Html::encode($task->assignedTo->username) : ' - Unassigned');
                     }
-                    return implode('<br>', $taskLinks);
+                    // Wrap each task in a div for slightly better structure and control if needed
+                    return '<div>' . implode('</div><div style="margin-top: 0.25rem;">', $taskLinks) . '</div>';
                 },
             ],
             [
