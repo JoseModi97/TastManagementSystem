@@ -91,21 +91,55 @@ $this->params['breadcrumbs'][] = $this->title;
                 'format' => 'raw',
                 'label' => 'Tasks in Project (filtered)',
                 'value' => function ($projectModel) use ($taskFilterModel) {
-                    $filteredTasks = $taskFilterModel->filterTasks($projectModel->tasks);
+                    // Create a query for tasks related to the current project
+                    $taskQuery = $projectModel->getTasks()
+                                            ->with(['status', 'priority', 'assignedTo']); // Eager load relations for display
+
+                    // Apply filters from $taskFilterModel to this query
+                    $taskFilterModel->applyTaskFiltersToQuery($taskQuery);
+
+                    // Create a new ActiveDataProvider for these tasks
+                    $tasksDataProvider = new \yii\data\ActiveDataProvider([
+                        'query' => $taskQuery,
+                        'pagination' => false, // Display all matching tasks for this project
+                        'sort' => [ // Optional: default sort for tasks within each project
+                            'defaultOrder' => [
+                                'priority_id' => SORT_ASC, // Example: High priority first
+                                'title' => SORT_ASC
+                            ]
+                        ]
+                    ]);
+
+                    $filteredTasks = $tasksDataProvider->getModels();
+
                     if (empty($filteredTasks)) {
-                        if (empty($taskFilterModel->task_title) && empty($taskFilterModel->task_status_id) && empty($taskFilterModel->task_priority_id) && empty($taskFilterModel->task_assigned_to)) {
-                            return '<span class="text-muted">No tasks in this project</span>';
+                        // Check if any filters were actually active
+                        $filtersApplied = !empty(trim($taskFilterModel->task_title)) ||
+                                          !empty($taskFilterModel->task_status_id) ||
+                                          !empty($taskFilterModel->task_priority_id) ||
+                                          !empty($taskFilterModel->task_assigned_to);
+
+                        if (!$filtersApplied && $projectModel->getTasks()->count() == 0) { // Original check: project has no tasks at all
+                             return '<span class="text-muted">No tasks in this project</span>';
+                        } elseif ($filtersApplied) {
+                            return '<span class="text-muted">No tasks match current filters</span>';
+                        } else {
+                            // No filters applied, but $filteredTasks is empty.
+                            // This implies the project has tasks, but they were somehow filtered out by an empty filter state.
+                            // This case should ideally not be reached if logic is correct.
+                            // Or, it means project has no tasks, and no filters were applied.
+                             return '<span class="text-muted">No tasks in this project</span>';
                         }
-                        return '<span class="text-muted">No tasks match current filters</span>';
                     }
+
                     $taskLinks = [];
                     foreach ($filteredTasks as $task) {
+                        /** @var \app\models\Task $task */
                         $taskLinks[] = Html::a(Html::encode($task->title), ['task/view', 'id' => $task->id])
                             . ' (' . Html::encode($task->status->label ?? 'N/A') . ')'
                             . ' (' . Html::encode($task->priority->label ?? 'N/A') . ')'
                             . ($task->assignedTo ? ' - Assigned: ' . Html::encode($task->assignedTo->username) : ' - Unassigned');
                     }
-                    // Wrap each task in a div for slightly better structure and control if needed
                     return '<div>' . implode('</div><div style="margin-top: 0.25rem;">', $taskLinks) . '</div>';
                 },
             ],

@@ -37,29 +37,29 @@ class ProjectTaskFilter extends Model
      * @param \app\models\Task[] $tasks
      * @return \app\models\Task[]
      */
-    public function filterTasks(array $tasks)
+    /**
+     * Applies the filter conditions to a given ActiveQuery instance.
+     * @param \yii\db\ActiveQuery $query The ActiveQuery to be filtered.
+     */
+    public function applyTaskFiltersToQuery(\yii\db\ActiveQuery $query)
     {
         $searchTitle = !empty($this->task_title) ? trim($this->task_title) : null;
 
-        if (empty($searchTitle) && empty($this->task_status_id) && empty($this->task_priority_id) && empty($this->task_assigned_to)) {
-            return $tasks;
+        if (!empty($searchTitle)) {
+            $query->andFilterWhere(['like', 'task.title', $searchTitle]);
         }
-
-        return array_filter($tasks, function ($task) use ($searchTitle) {
-            /** @var \app\models\Task $task */
-            if (!empty($searchTitle) && stripos($task->title, $searchTitle) === false) {
-                return false;
-            }
-            if (!empty($this->task_status_id) && $task->status_id != $this->task_status_id) {
-                return false;
-            }
-            if (!empty($this->task_priority_id) && $task->priority_id != $this->task_priority_id) {
-                return false;
-            }
-            if (!empty($this->task_assigned_to) && $task->assigned_to != $this->task_assigned_to) {
-                return false;
-            }
-            return true;
-        });
+        if (!empty($this->task_status_id)) {
+            $query->andFilterWhere(['task.status_id' => $this->task_status_id]);
+        }
+        if (!empty($this->task_priority_id)) {
+            $query->andFilterWhere(['task.priority_id' => $this->task_priority_id]);
+        }
+        if (!empty($this->task_assigned_to)) {
+            $query->andFilterWhere(['task.assigned_to' => $this->task_assigned_to]);
+        }
+        // If you want to explicitly filter for unassigned tasks when a special value is passed
+        // else if ($this->task_assigned_to === 'unassigned') { // Assuming 'unassigned' is a value from dropdown
+        //     $query->andWhere(['task.assigned_to' => null]);
+        // }
     }
 }
