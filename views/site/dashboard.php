@@ -13,13 +13,100 @@ use yii\helpers\Html;
 use yii\web\View;
 use yii\helpers\Url;
 
+// Ensure new variables from controller are documented here for clarity
+/** @var string $userName */
+/** @var app\models\Task[] $hotListTasks */
+/** @var int $dueTodayCount */
+/** @var int $overdueCount */
+
 $this->title = 'Dashboard';
 $this->params['breadcrumbs'][] = $this->title;
+
+$priorityLabels = [1 => 'Low', 2 => 'Medium', 3 => 'High']; // For Hot List display
+
 ?>
 <div class="site-dashboard">
-    <h1><?= Html::encode($this->title) ?></h1>
+    <!-- Personalized Greeting -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800"><?= Html::encode($this->title) ?></h1>
+        <?php // Potential spot for a "Generate Report" button later ?>
+    </div>
+    <p class="mb-4">Welcome back, <strong><?= Html::encode($userName) ?></strong>! Here's your mission briefing.</p>
 
-    <p>Welcome back, <strong><?= Html::encode(Yii::$app->user->identity->username) ?></strong>!</p>
+    <!-- Mission Control Phase 1 Row -->
+    <div class="row">
+        <!-- Hot List Card/Column -->
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Your Hot List (Next 3)</div>
+                            <?php if (!empty($hotListTasks)): ?>
+                                <ul class="list-unstyled mb-0">
+                                    <?php foreach ($hotListTasks as $task): ?>
+                                        <li class="mb-1">
+                                            <?= Html::a(Html::encode($task->title), ['task/view', 'id' => $task->id], ['class' => 'text-gray-800']) ?>
+                                            <small class="d-block text-muted">
+                                                Due: <?= Yii::$app->formatter->asDate($task->due_date, 'medium') ?>
+                                                (Priority: <?= Html::encode($priorityLabels[$task->priority_id] ?? $task->priority_id) ?>)
+                                            </small>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php else: ?>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">All clear!</div>
+                                <p class="text-muted mb-0">No immediate urgent tasks.</p>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-rocket fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Launchpad Card -->
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Today's Launchpad (Due Today)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?= Html::encode($dueTodayCount) ?></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Red Alerts! Card -->
+        <div class="col-xl-4 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Red Alerts! (Overdue)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?= Html::encode($overdueCount) ?></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Mission Control Phase 1 Row -->
+
+    <hr class="my-4">
 
     <div class="row">
         <div class="col-lg-4">
