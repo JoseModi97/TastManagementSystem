@@ -12,8 +12,6 @@ class DataController extends Controller
     /**
      * {@inheritdoc}
      */
-    // Optional: Add access control if needed
-    /*
     public function behaviors()
     {
         return [
@@ -21,14 +19,14 @@ class DataController extends Controller
                 'class' => AccessControl::class,
                 'rules' => [
                     [
+                        'actions' => ['index', 'load-data'], // Specify actions to protect
                         'allow' => true,
-                        'roles' => ['@'], // Example: only authenticated users
+                        'roles' => ['admin'], // Only users with 'admin' role
                     ],
                 ],
             ],
         ];
     }
-    */
 
     /**
      * Displays the data loading page.
