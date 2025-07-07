@@ -63,31 +63,6 @@ class ReportController extends Controller
      * Displays a report of projects and their tasks.
      * @return string
      */
-    public function actionProjectTasks()
-    {
-        $taskFilterModel = new \app\models\report\ProjectTaskFilter();
-        $taskFilterModel->load(Yii::$app->request->get());
-
-        // The main query for projects remains the same for now.
-        // We are filtering the tasks displayed *for each project* in the view.
-        $projectsProvider = new ActiveDataProvider([
-            'query' => Project::find()->with(['tasks.status', 'tasks.priority', 'tasks.assignedTo', 'createdBy']),
-            'pagination' => [
-                'pageSize' => 20, // Adjust as needed
-            ],
-            'sort' => [ // Optional: define default sort for projects
-                'defaultOrder' => [
-                    'name' => SORT_ASC,
-                ]
-            ]
-        ]);
-
-        return $this->render('project-tasks', [
-            'projectsProvider' => $projectsProvider,
-            'taskFilterModel' => $taskFilterModel,
-        ]);
-    }
-
     /**
      * Displays a report of task statuses.
      * @return string
@@ -213,68 +188,6 @@ class ReportController extends Controller
                             $task->due_date ? Yii::$app->formatter->asDate($task->due_date, 'php:Y-m-d') : '',
                         ]);
                     }
-                }
-            }
-        }
-
-        fclose($output);
-        Yii::$app->end();
-    }
-
-    public function actionExportProjectTasksCsv()
-    {
-        $taskFilterModel = new \app\models\report\ProjectTaskFilter();
-        $taskFilterModel->load(Yii::$app->request->get());
-
-        $projectsProvider = new ActiveDataProvider([
-            'query' => Project::find()->with(['tasks.status', 'tasks.priority', 'tasks.assignedTo', 'createdBy']),
-            'pagination' => false, // Export all projects
-        ]);
-        $projects = $projectsProvider->getModels();
-
-        $filename = "project_tasks_report_" . date('YmdHis') . ".csv";
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-
-        $output = fopen('php://output', 'w');
-        fputs($output, $bom =( chr(0xEF) . chr(0xBB) . chr(0xBF) ));
-
-        fputcsv($output, [
-            'Project ID', 'Project Name', 'Project Created By', 'Project Created At',
-            'Task ID', 'Task Title', 'Task Status', 'Task Priority', 'Task Assigned To', 'Task Due Date'
-        ]);
-
-        foreach ($projects as $project) {
-            /** @var \app\models\Project $project */
-            $filteredTasks = $taskFilterModel->filterTasks($project->tasks);
-
-            if (empty($filteredTasks)) {
-                if (empty($taskFilterModel->task_title) && empty($taskFilterModel->task_status_id) && empty($taskFilterModel->task_priority_id) && empty($taskFilterModel->task_assigned_to)) {
-                     fputcsv($output, [
-                        $project->id, $project->name, $project->createdBy->username ?? 'N/A', Yii::$app->formatter->asDatetime($project->created_at),
-                        '(No tasks in this project)', '', '', '', '', ''
-                    ]);
-                } else {
-                    fputcsv($output, [
-                        $project->id, $project->name, $project->createdBy->username ?? 'N/A', Yii::$app->formatter->asDatetime($project->created_at),
-                        '(No tasks match current filters for this project)', '', '', '', '', ''
-                    ]);
-                }
-            } else {
-                foreach ($filteredTasks as $task) {
-                    /** @var \app\models\Task $task */
-                    fputcsv($output, [
-                        $project->id,
-                        $project->name,
-                        $project->createdBy->username ?? 'N/A',
-                        Yii::$app->formatter->asDatetime($project->created_at),
-                        $task->id,
-                        $task->title,
-                        $task->status->label ?? 'N/A',
-                        $task->priority->label ?? 'N/A',
-                        $task->assignedTo->username ?? 'Unassigned',
-                        $task->due_date ? Yii::$app->formatter->asDate($task->due_date, 'php:Y-m-d') : '',
-                    ]);
                 }
             }
         }

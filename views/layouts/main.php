@@ -108,7 +108,6 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
                 // Reports Menu Item
                 $reportMenuItems = [
                     ['label' => 'User Tasks', 'url' => ['/report/user-tasks']],
-                    ['label' => 'Project Tasks', 'url' => ['/report/project-tasks']],
                     ['label' => 'Task Status', 'url' => ['/report/task-status']],
                     ['label' => 'Task Priority', 'url' => ['/report/task-priority']],
                     ['label' => 'Task History', 'url' => ['/report/task-history']],
