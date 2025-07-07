@@ -32,12 +32,15 @@ class LoginForm extends Model
             ['rememberMe', 'boolean'],
             // password is validated by validatePassword()
             ['password', 'validatePassword'],
+            // After password validation, check if the user has roles
+            ['password', 'validateUserHasRoles', 'skipOnError' => true], // skipOnError ensures this runs only if validatePassword passed for 'password'
         ];
     }
 
     /**
      * Validates the password.
      * This method serves as the inline validation for password.
+     * It also implicitly authenticates the user by populating $this->_user.
      *
      * @param string $attribute the attribute currently being validated
      * @param array $params the additional name-value pairs given in the rule
@@ -77,5 +80,32 @@ class LoginForm extends Model
         }
 
         return $this->_user;
+    }
+
+    /**
+     * Validates if the authenticated user has any roles assigned.
+     * This method is called after validatePassword() is successful.
+     *
+     * @param string $attribute the attribute currently being validated
+     * @param array $params the additional name-value pairs given in the rule
+     */
+    public function validateUserHasRoles($attribute, $params)
+    {
+        // This validator should only run if there are no previous errors AND a user is authenticated.
+        // The 'skipOnError' => true in rules() handles the "no previous errors for this attribute" part.
+        // We still need to ensure $this->getUser() returns a valid user.
+        if (!$this->hasErrors()) { // General check, though skipOnError on the rule is more specific
+            $user = $this->getUser();
+
+            // If $user is null here, it means validatePassword failed to find/auth user,
+            // or this validator was somehow called out of order.
+            // validatePassword already adds an error if $user is null or password mismatch.
+            if ($user) {
+                $assignments = Yii::$app->authManager->getAssignments($user->getId());
+                if (empty($assignments)) {
+                    $this->addError($attribute, 'You have not been assigned a role. Please contact an administrator.');
+                }
+            }
+        }
     }
 }
