@@ -2,54 +2,74 @@
 
 /** @var yii\web\View $this */
 /** @var yii\bootstrap5\ActiveForm $form */
-
 /** @var app\models\LoginForm $model */
 
-use yii\bootstrap5\ActiveForm;
-use yii\bootstrap5\Html;
+use yii\bootstrap5\ActiveForm; // Will change to yii\widgets\ActiveForm if issues arise with BS5 version
+use yii\helpers\Html;
 
+$this->context->layout = 'login'; // Use the new login layout
 $this->title = 'Login';
-$this->params['breadcrumbs'][] = $this->title;
+// No breadcrumbs for login page typically
+
+// It's important to ensure that the assets from sb-admin-2 are correctly loaded.
+// This is handled in the new views/layouts/login.php
 ?>
-<div class="site-login">
-    <h1><?= Html::encode($this->title) ?></h1>
-
-    <p>Please fill out the following fields to login:</p>
-
-    <div class="row">
-        <div class="col-lg-5">
+<div class="row">
+    <div class="col-lg-6 d-none d-lg-block bg-login-image"></div>
+    <div class="col-lg-6">
+        <div class="p-5">
+            <div class="text-center">
+                <h1 class="h4 text-gray-900 mb-4">Welcome Back!</h1>
+            </div>
 
             <?php $form = ActiveForm::begin([
                 'id' => 'login-form',
+                'options' => ['class' => 'user'],
                 'fieldConfig' => [
-                    'template' => "{label}\n{input}\n{error}",
-                    'labelOptions' => ['class' => 'col-lg-1 col-form-label mr-lg-3'],
-                    'inputOptions' => ['class' => 'col-lg-3 form-control'],
-                    'errorOptions' => ['class' => 'col-lg-7 invalid-feedback'],
+                    'template' => "{input}\n{error}", // SB Admin 2 structure doesn't typically show labels above inputs here
+                    'inputOptions' => ['class' => 'form-control form-control-user'],
+                    'errorOptions' => ['class' => 'invalid-feedback text-danger small d-block'], // Make errors visible
                 ],
             ]); ?>
 
-            <?= $form->field($model, 'username')->textInput(['autofocus' => true]) ?>
+            <?= $form->field($model, 'username', [
+                'inputOptions' => [
+                    'class' => 'form-control form-control-user',
+                    'placeholder' => 'Enter Email Address...', // Assuming username is email
+                    'autofocus' => true
+                ]
+            ])->label(false) ?>
 
-            <?= $form->field($model, 'password')->passwordInput() ?>
+            <?= $form->field($model, 'password', [
+                'inputOptions' => [
+                    'class' => 'form-control form-control-user',
+                    'placeholder' => 'Password'
+                ]
+            ])->passwordInput()->label(false) ?>
 
-            <?= $form->field($model, 'rememberMe')->checkbox([
-                'template' => "<div class=\"custom-control custom-checkbox\">{input} {label}</div>\n<div class=\"col-lg-8\">{error}</div>",
-            ]) ?>
+            <?= $form->field($model, 'rememberMe', [
+                'template' => "<div class=\"form-group\"><div class=\"custom-control custom-checkbox small\">{input}{label}\n{error}</div></div>",
+                'labelOptions' => ['class' => 'custom-control-label'],
+                'inputOptions' => ['class' => 'custom-control-input'],
+            ])->checkbox() ?>
 
-            <div class="form-group">
-                <div>
-                    <?= Html::submitButton('Login', ['class' => 'btn btn-primary', 'name' => 'login-button']) ?>
-                </div>
-            </div>
+            <?= Html::submitButton('Login', ['class' => 'btn btn-primary btn-user btn-block', 'name' => 'login-button']) ?>
 
+            <hr>
+            <a href="#" class="btn btn-google btn-user btn-block disabled"> {/* Placeholder - implement actual OAuth if needed */}
+                <i class="fab fa-google fa-fw"></i> Login with Google
+            </a>
+            <a href="#" class="btn btn-facebook btn-user btn-block disabled"> {/* Placeholder - implement actual OAuth if needed */}
+                <i class="fab fa-facebook-f fa-fw"></i> Login with Facebook
+            </a>
             <?php ActiveForm::end(); ?>
-
-            <div style="color:#999;">
-                <!-- Hint for hardcoded users removed as we now use database -->
-                If you don't have an account, you can <?= Html::a('signup here', ['site/signup']) ?>.
+            <hr>
+            <div class="text-center">
+                <?= Html::a('Forgot Password?', ['site/request-password-reset'], ['class' => 'small']) ?>
             </div>
-
+            <div class="text-center">
+                <?= Html::a('Create an Account!', ['site/signup'], ['class' => 'small']) ?>
+            </div>
         </div>
     </div>
 </div>
