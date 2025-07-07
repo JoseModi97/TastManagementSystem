@@ -24,62 +24,73 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
 <html lang="<?= Yii::$app->language ?>" class="h-100">
 <head>
     <title><?= Html::encode($this->title) ?></title>
+    <?php
+    $this->registerCssFile("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css", [
+        'integrity' => 'sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr',
+        'crossorigin' => 'anonymous',
+    ]);
+    $this->registerJsFile("https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js", [
+        'integrity' => 'sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q',
+        'crossorigin' => 'anonymous',
+        'depends' => [\yii\web\JqueryAsset::class],
+    ]);
+    $this->registerCssFile('@web/css/site-custom.css');
+    ?>
     <?php $this->head() ?>
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
 </head>
 <body class="d-flex flex-column h-100">
 <?php $this->beginBody() ?>
 
-<header id="header">
-    <?php
-    NavBar::begin([
-        'brandLabel' => Yii::$app->name,
-        'brandUrl' => Yii::$app->homeUrl,
-        'options' => ['class' => 'navbar-expand-md navbar-dark bg-dark fixed-top']
-    ]);
-    $navItems = [];
-    if (Yii::$app->user->isGuest) {
-        $navItems[] = ['label' => 'Home', 'url' => ['/site/index']];
-        $navItems[] = ['label' => 'About', 'url' => ['/site/about']];
-        $navItems[] = ['label' => 'Contact', 'url' => ['/site/contact']];
-        $navItems[] = ['label' => 'Signup', 'url' => ['/site/signup']];
-        $navItems[] = ['label' => 'Login', 'url' => ['/site/login']];
-    } else {
-        $navItems[] = ['label' => 'Dashboard', 'url' => ['/site/index']];
-        $navItems[] = ['label' => 'Projects', 'url' => ['/project/index']];
-        $navItems[] = ['label' => 'Tasks', 'url' => ['/task/index']];
-        if (Yii::$app->user->can('admin')) {
-            $navItems[] = ['label' => 'User Management', 'url' => ['/user-management/index']];
-        }
-        // Common items for logged-in users, could also include About/Contact if desired
-        $navItems[] = ['label' => 'About', 'url' => ['/site/about']]; // Adding About for logged-in users too
-        $navItems[] = ['label' => 'Contact', 'url' => ['/site/contact']]; // Adding Contact for logged-in users too
-        $navItems[] = '<li class="nav-item">'
-            . Html::beginForm(['/site/logout'])
-            . Html::submitButton(
-                'Logout (' . Yii::$app->user->identity->username . ')',
-                ['class' => 'nav-link btn btn-link logout']
-            )
-            . Html::endForm()
-            . '</li>';
-    }
-    echo Nav::widget([
-        'options' => ['class' => 'navbar-nav'],
-        'items' => $navItems,
-    ]);
-    NavBar::end();
-    ?>
-</header>
-
-<main id="main" class="flex-shrink-0" role="main">
-    <div class="container">
-        <?php if (!empty($this->params['breadcrumbs'])): ?>
-            <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
-        <?php endif ?>
-        <?= Alert::widget() ?>
-        <?= $content ?>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="<?= Yii::$app->homeUrl ?>"><?= Yii::$app->name ?></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <?php
+            $navItems = [];
+            if (Yii::$app->user->isGuest) {
+                $navItems[] = ['label' => 'Home', 'url' => ['/site/index']];
+                $navItems[] = ['label' => 'About', 'url' => ['/site/about']];
+                $navItems[] = ['label' => 'Contact', 'url' => ['/site/contact']];
+                $navItems[] = ['label' => 'Signup', 'url' => ['/site/signup']];
+                $navItems[] = ['label' => 'Login', 'url' => ['/site/login']];
+            } else {
+                $navItems[] = ['label' => 'Dashboard', 'url' => ['/site/index']];
+                $navItems[] = ['label' => 'Projects', 'url' => ['/project/index']];
+                $navItems[] = ['label' => 'Tasks', 'url' => ['/task/index']];
+                if (Yii::$app->user->can('admin')) {
+                    $navItems[] = ['label' => 'User Management', 'url' => ['/user-management/index']];
+                }
+                $navItems[] = ['label' => 'About', 'url' => ['/site/about']];
+                $navItems[] = ['label' => 'Contact', 'url' => ['/site/contact']];
+                $navItems[] = '<li class="nav-item">'
+                    . Html::beginForm(['/site/logout'], 'post', ['class' => 'd-flex'])
+                    . Html::submitButton(
+                        'Logout (' . Yii::$app->user->identity->username . ')',
+                        ['class' => 'nav-link btn btn-link logout']
+                    )
+                    . Html::endForm()
+                    . '</li>';
+            }
+            echo Nav::widget([
+                'options' => ['class' => 'navbar-nav me-auto mb-2 mb-lg-0'],
+                'items' => $navItems,
+            ]);
+            ?>
+        </div>
     </div>
-</main>
+</nav>
+
+<div class="container mt-4">
+    <?php if (!empty($this->params['breadcrumbs'])): ?>
+        <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
+    <?php endif ?>
+    <?= Alert::widget() ?>
+    <?= $content ?>
+</div>
 
 <footer id="footer" class="mt-auto py-3 bg-light">
     <div class="container">

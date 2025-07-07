@@ -67,6 +67,7 @@ $this->params['breadcrumbs'][] = $this->title;
     ]);
 
     echo \yii\grid\GridView::widget([
+        'tableOptions' => ['class' => 'table table-striped table-bordered'],
         'dataProvider' => $taskDataProvider,
         'summary' => '', // Optionally hide the summary
         'columns' => [

@@ -41,6 +41,7 @@ if ($project) {
     <?php // echo $this->render('_search', ['model' => $searchModel]); // Full search form can be added if needed ?>
 
     <?= GridView::widget([
+        'tableOptions' => ['class' => 'table table-striped table-bordered'],
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
