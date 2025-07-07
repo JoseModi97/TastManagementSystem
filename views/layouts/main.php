@@ -158,25 +158,87 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
             }
 
             foreach ($menuItems as $item) {
-                $icon = $item['icon'] ?? 'fas fa-fw fa-circle'; // Default icon
-                $url = Yii::$app->urlManager->createUrl($item['url']);
-                $active = (Yii::$app->request->url == $url) ? 'active' : ''; // Basic active state check
+                $icon = $item['icon'] ?? 'fas fa-fw fa-circle';
+                $processedUrl = Yii::$app->urlManager->createUrl($item['url']); // Renamed to avoid conflict, used for non-collapsible
 
                 if (isset($item['items'])) { // Collapsible item
-                    echo '<li class="nav-item ' . $active . '">';
-                    echo Html::a('<i class="' . $icon . '"></i><span>' . $item['label'] . '</span>', $item['url'] ?? '#', $item['linkOptions'] ?? []);
-                    echo '<div id="' . str_replace('#','',$item['linkOptions']['data-target']) . '" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">';
+                    $isParentExplicitlyActive = isset($item['active']) && $item['active'];
+
+                    $parentLiClasses = ['nav-item'];
+                    if ($isParentExplicitlyActive) {
+                        $parentLiClasses[] = 'active';
+                    }
+
+                    $currentLinkOptions = $item['linkOptions'] ?? [];
+                    $currentLinkClassesInput = $currentLinkOptions['class'] ?? 'nav-link';
+                    if (is_array($currentLinkClassesInput)) {
+                        $currentLinkClasses = $currentLinkClassesInput;
+                    } else {
+                        $currentLinkClasses = explode(' ', (string)$currentLinkClassesInput);
+                    }
+
+                    $submenuDivClasses = ['collapse'];
+                    $shouldExpand = $isParentExplicitlyActive;
+
+                    if (!$shouldExpand) {
+                        // Check if a child is active to expand the menu
+                        foreach ($item['items'] as $subItem) {
+                            $subUrl = Yii::$app->urlManager->createUrl($subItem['url']);
+                            if (Yii::$app->request->url == $subUrl) {
+                                $shouldExpand = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($shouldExpand) {
+                        $currentLinkOptions['aria-expanded'] = 'true';
+                        $currentLinkClasses = array_filter($currentLinkClasses, function($c) { return $c !== 'collapsed'; });
+                        if (empty($currentLinkClasses) || !in_array('nav-link', $currentLinkClasses)) { $currentLinkClasses[] = 'nav-link';} // Ensure nav-link is present
+                        $submenuDivClasses[] = 'show';
+                    } else {
+                        if (!in_array('collapsed', $currentLinkClasses)) {
+                            $currentLinkClasses[] = 'collapsed';
+                        }
+                        $currentLinkOptions['aria-expanded'] = 'false';
+                    }
+                    $currentLinkOptions['class'] = implode(' ', array_unique(array_filter($currentLinkClasses)));
+
+                    $currentLinkOptions['href'] = $item['url'] ?? '#'; // Collapsible parent URL is usually #
+                    // Ensure data-toggle and data-target are from the original item definition
+                    if(isset($item['linkOptions']['data-toggle'])) $currentLinkOptions['data-toggle'] = $item['linkOptions']['data-toggle']; else $currentLinkOptions['data-toggle'] = 'collapse';
+                    if(isset($item['linkOptions']['data-target'])) $currentLinkOptions['data-target'] = $item['linkOptions']['data-target'];
+                    // aria-controls should also be preserved or correctly set
+                    if(isset($item['linkOptions']['aria-controls'])) $currentLinkOptions['aria-controls'] = $item['linkOptions']['aria-controls'];
+
+
+                    echo '<li class="' . implode(' ', $parentLiClasses) . '">';
+                    echo Html::a('<i class="' . $icon . '"></i><span>' . $item['label'] . '</span>', $currentLinkOptions['href'], $currentLinkOptions);
+
+                    $divId = '';
+                    // Ensure divId is derived from data-target, which should be in $item['linkOptions']
+                    if (isset($item['linkOptions']['data-target'])) {
+                        $divId = str_replace('#','',$item['linkOptions']['data-target']);
+                    }
+                    $ariaLabelledBy = $item['linkOptions']['aria-controls'] ?? $divId; // Prefer aria-controls if defined in item
+
+                    echo '<div id="' . $divId . '" class="' . implode(' ', $submenuDivClasses) . '" aria-labelledby="'.$ariaLabelledBy.'" data-parent="#accordionSidebar">';
                     echo '<div class="bg-white py-2 collapse-inner rounded">';
-                    // Optionally add a header like <h6 class="collapse-header">Custom Components:</h6>
                     foreach ($item['items'] as $subItem) {
                         $subUrl = Yii::$app->urlManager->createUrl($subItem['url']);
-                        echo Html::a($subItem['label'], $subUrl, ['class' => 'collapse-item']);
+                        $subActive = (Yii::$app->request->url == $subUrl) ? 'active' : ''; // This is from previous step
+                        echo Html::a($subItem['label'], $subUrl, ['class' => 'collapse-item ' . $subActive]);
                     }
                     echo '</div></div>';
                     echo '</li>';
                 } else { // Regular item
-                    echo '<li class="nav-item ' . $active . '">';
-                    echo Html::a('<i class="' . $icon . '"></i><span>' . $item['label'] . '</span>', $url, ['class' => 'nav-link']);
+                    $isActive = (isset($item['active']) && $item['active']) || (Yii::$app->request->url == $processedUrl && $processedUrl !== '#');
+                    $liClasses = ['nav-item'];
+                    if ($isActive) {
+                        $liClasses[] = 'active';
+                    }
+                    echo '<li class="' . implode(' ', $liClasses) . '">';
+                    echo Html::a('<i class="' . $icon . '"></i><span>' . $item['label'] . '</span>', $processedUrl, ['class' => 'nav-link']);
                     echo '</li>';
                 }
             }
