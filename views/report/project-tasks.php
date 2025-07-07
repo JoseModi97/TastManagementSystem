@@ -117,9 +117,3 @@ $this->params['breadcrumbs'][] = $this->title;
     ]); ?>
 
 </div>
-                'format' => ['datetime', 'php:Y-m-d H:i:s'],
-            ],
-        ],
-    ]); ?>
-
-</div>
