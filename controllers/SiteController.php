@@ -74,39 +74,73 @@ class SiteController extends Controller
     public function actionIndex()
     {
         if (Yii::$app->user->isGuest) {
+            // For guests, render the 'index' view, which might be different from the dashboard
             return $this->render('index');
         }
 
         // For logged-in users, show dashboard
         $userId = Yii::$app->user->id;
+        $userName = Yii::$app->user->identity->username; // Assuming 'username' attribute
 
+        // --- New Data for Mission Control Phase 1 ---
+        $today_start_datetime = date('Y-m-d 00:00:00');
+        $today_end_datetime = date('Y-m-d 23:59:59');
+
+        $hotListTasks = Task::find()
+            ->where(['assigned_to' => $userId])
+            ->andWhere(['in', 'status_id', [1, 2]]) // Not completed (To Do, In Progress)
+            ->orderBy(['due_date' => SORT_ASC, 'priority_id' => SORT_DESC]) // Priority 3 (High) first
+            ->limit(3)
+            ->all();
+
+        $dueTodayCount = Task::find()
+            ->where(['assigned_to' => $userId])
+            ->andWhere(['in', 'status_id', [1, 2]])
+            ->andWhere(['between', 'due_date', $today_start_datetime, $today_end_datetime])
+            ->count();
+
+        $overdueCount = Task::find()
+            ->where(['assigned_to' => $userId])
+            ->andWhere(['in', 'status_id', [1, 2]])
+            ->andWhere(['<', 'due_date', $today_start_datetime]) // Due date is before today
+            ->count();
+        // --- End of New Data ---
+
+        // Existing data fetching (ensure variable names don't clash or integrate if overlapping)
         $projectCount = Project::find()->where(['created_by' => $userId])->count();
         $tasksAssignedCount = Task::find()->where(['assigned_to' => $userId])->count();
 
-        // More complex: tasks in user's projects that are not done
         $activeTasksInOwnedProjectsCount = Task::find()
             ->joinWith('project p')
-            ->joinWith('status s')
+            // ->joinWith('status s') // status relation might not be needed if using status_id
             ->where(['p.created_by' => $userId])
-            ->andWhere(['!=', 's.label', 'Done']) // Assuming 'Done' is the label for completed status
+            // ->andWhere(['!=', 's.label', 'Done']) // Use status_id directly
+            ->andWhere(['in', 'task.status_id', [1, 2]]) // Assuming task.status_id is the correct column name
             ->count();
 
-        // Recently Due Tasks (e.g., due in next 7 days or overdue, assigned to user)
         $recentlyDueTasks = Task::find()
             ->where(['assigned_to' => $userId])
             ->andWhere(['is not', 'due_date', null])
             ->andWhere(['<=', 'due_date', date('Y-m-d H:i:s', strtotime('+7 days'))])
-            ->joinWith('status s') // to exclude done tasks
-            ->andWhere(['!=', 's.label', 'Done'])
+            // ->joinWith('status s')
+            // ->andWhere(['!=', 's.label', 'Done']) // Use status_id directly
+            ->andWhere(['in', 'status_id', [1, 2]])
             ->orderBy(['due_date' => SORT_ASC])
             ->limit(5)
             ->all();
 
         return $this->render('dashboard', [
+            // New Mission Control Data
+            'userName' => $userName,
+            'hotListTasks' => $hotListTasks,
+            'dueTodayCount' => $dueTodayCount,
+            'overdueCount' => $overdueCount,
+
+            // Existing Data (review for redundancy)
             'projectCount' => $projectCount,
             'tasksAssignedCount' => $tasksAssignedCount,
             'activeTasksInOwnedProjectsCount' => $activeTasksInOwnedProjectsCount,
-            'recentlyDueTasks' => $recentlyDueTasks, // This is for the list, might be reusable or need a different query for chart
+            'recentlyDueTasks' => $recentlyDueTasks,
             'overallTaskStatusData' => $this->getOverallTaskStatusData(),
             'tasksNearingDeadlineData' => $this->getTasksNearingDeadlineData(),
             'userTaskLoadData' => $this->getUserTaskLoadData(),
