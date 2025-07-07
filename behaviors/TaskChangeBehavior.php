@@ -60,7 +60,18 @@ class TaskChangeBehavior extends Behavior
             if ($newValue !== null && $newValue !== '') {
                 $history = new TaskHistory();
                 $history->task_id = $owner->id;
-                $history->user_id = Yii::$app->user && !Yii::$app->user->isGuest ? Yii::$app->user->id : null;
+
+                $userId = null;
+                // Check if 'user' component is available and is an instance of yii\web\User
+                // This is more robust for console applications where 'user' might be different or not fully configured
+                if (Yii::$app->has('user')) {
+                    $userComponent = Yii::$app->get('user', false); // false to not throw exception if not found
+                    if ($userComponent instanceof \yii\web\User && !$userComponent->getIsGuest()) {
+                        $userId = $userComponent->id;
+                    }
+                }
+                $history->user_id = $userId;
+
                 $history->attribute = $attribute;
                 $history->old_value = null; // No old value on creation
                 $history->old_value_label = null;
@@ -98,7 +109,18 @@ class TaskChangeBehavior extends Behavior
             if (array_key_exists($attribute, $changedAttributes)) {
                 $history = new TaskHistory();
                 $history->task_id = $owner->id;
-                $history->user_id = Yii::$app->user && !Yii::$app->user->isGuest ? Yii::$app->user->id : null;
+
+                $userId = null;
+                // Check if 'user' component is available and is an instance of yii\web\User
+                // This is more robust for console applications where 'user' might be different or not fully configured
+                if (Yii::$app->has('user')) {
+                    $userComponent = Yii::$app->get('user', false); // false to not throw exception if not found
+                    if ($userComponent instanceof \yii\web\User && !$userComponent->getIsGuest()) {
+                        $userId = $userComponent->id;
+                    }
+                }
+                $history->user_id = $userId;
+
                 $history->attribute = $attribute;
 
                 $oldValue = $changedAttributes[$attribute];
