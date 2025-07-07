@@ -106,6 +106,70 @@ class SiteController extends Controller
             ->count();
         // --- End of New Data ---
 
+        // --- New Data for Mission Control Phase 2 ---
+
+        // 1. "Active Engagements" (User's Active Projects Count)
+        $activeEngagementsCount = Task::find()
+            ->select('project_id')
+            ->distinct()
+            ->where(['assigned_to' => $userId])
+            ->andWhere(['in', 'status_id', [1, 2]]) // Not completed
+            ->andWhere(['is not', 'project_id', null]) // Ensure project_id is not null
+            ->count();
+
+        // 2. "Mission Accomplished!" (Tasks Completed This Week by User)
+        $sevenDaysAgo = date('Y-m-d H:i:s', strtotime('-7 days'));
+        $missionAccomplishedCount = Task::find()
+            ->where(['assigned_to' => $userId])
+            ->andWhere(['status_id' => 3]) // Done
+            ->andWhere(['>=', 'updated_at', $sevenDaysAgo]) // Using updated_at as proxy
+            ->count();
+
+        // 3. "Project Pulse" Data (Top 2-3 Personal Projects)
+        $userProjectTaskCounts = Task::find()
+            ->select(['project_id', 'COUNT(*) as task_count'])
+            ->where(['assigned_to' => $userId])
+            ->andWhere(['in', 'status_id', [1, 2]]) // Non-completed tasks
+            ->andWhere(['is not', 'project_id', null])
+            ->groupBy('project_id')
+            ->orderBy(['task_count' => SORT_DESC])
+            ->limit(3)
+            ->asArray()
+            ->all();
+
+        $projectPulseData = [];
+        if (!empty($userProjectTaskCounts)) {
+            $projectIdsForPulse = array_column($userProjectTaskCounts, 'project_id');
+            // Fetch projects by IDs collected, ensuring we have project objects
+            $projectsForPulseModels = Project::find()->where(['id' => $projectIdsForPulse])->indexBy('id')->all();
+
+            // Re-iterate userProjectTaskCounts to maintain the order (most active first)
+            foreach ($userProjectTaskCounts as $userProjectTaskInfo) {
+                $projectId = $userProjectTaskInfo['project_id'];
+                if (isset($projectsForPulseModels[$projectId])) {
+                    /** @var app\models\Project $project */
+                    $project = $projectsForPulseModels[$projectId];
+
+                    $totalTasksInProject = (int)Task::find()->where(['project_id' => $projectId])->count();
+                    $completedTasksInProject = (int)Task::find()
+                        ->where(['project_id' => $projectId, 'status_id' => 3]) // Done
+                        ->count();
+
+                    $completionPercentage = 0;
+                    if ($totalTasksInProject > 0) {
+                        $completionPercentage = round(($completedTasksInProject / $totalTasksInProject) * 100);
+                    }
+
+                    $projectPulseData[] = [
+                        'id' => $project->id, // Keep project ID if needed for links
+                        'name' => $project->name,
+                        'percentage' => $completionPercentage,
+                    ];
+                }
+            }
+        }
+        // --- End of New Data for Phase 2 ---
+
         // Existing data fetching (ensure variable names don't clash or integrate if overlapping)
         $projectCount = Project::find()->where(['created_by' => $userId])->count();
         $tasksAssignedCount = Task::find()->where(['assigned_to' => $userId])->count();
@@ -135,6 +199,11 @@ class SiteController extends Controller
             'hotListTasks' => $hotListTasks,
             'dueTodayCount' => $dueTodayCount,
             'overdueCount' => $overdueCount,
+
+            // New Phase 2 Data
+            'activeEngagementsCount' => $activeEngagementsCount,
+            'missionAccomplishedCount' => $missionAccomplishedCount,
+            'projectPulseData' => $projectPulseData,
 
             // Existing Data (review for redundancy)
             'projectCount' => $projectCount,
