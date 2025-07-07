@@ -33,13 +33,14 @@ $config = [
         ],
     ],
     'params' => $params,
-    /*
     'controllerMap' => [
         'fixture' => [ // Fixture generation command line.
             'class' => 'yii\faker\FixtureController',
         ],
+        'fake-data' => [
+            'class' => 'app\console\controllers\FakeDataController',
+        ],
     ],
-    */
 ];
 
 if (YII_ENV_DEV) {
