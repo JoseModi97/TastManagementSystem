@@ -1,37 +1,85 @@
 <?php
 
 /** @var yii\web\View $this */
-/** @var yii\bootstrap5\ActiveForm $form */
+/** @var yii\bootstrap5\ActiveForm $form */ // Consider yii\widgets\ActiveForm if BS5 conflicts
 /** @var app\models\SignupForm $model */
 
-use yii\bootstrap5\ActiveForm;
-use yii\bootstrap5\Html;
+use yii\bootstrap5\ActiveForm; // Or yii\widgets\ActiveForm
+use yii\helpers\Html;
 
-$this->title = 'Signup';
-$this->params['breadcrumbs'][] = $this->title;
+$this->context->layout = 'login'; // Reusing login layout
+$this->title = 'Create an Account';
+// No breadcrumbs for this layout typically
 ?>
-<div class="site-signup">
-    <h1><?= Html::encode($this->title) ?></h1>
+<div class="row">
+    <div class="col-lg-5 d-none d-lg-block bg-register-image"></div>
+    <div class="col-lg-7">
+        <div class="p-5">
+            <div class="text-center">
+                <h1 class="h4 text-gray-900 mb-4"><?= Html::encode($this->title) ?></h1>
+            </div>
 
-    <p>Please fill out the following fields to signup:</p>
+            <?php $form = ActiveForm::begin([
+                'id' => 'form-signup',
+                'options' => ['class' => 'user'],
+                'fieldConfig' => [
+                    'template' => "{input}\n{error}", // No labels above inputs typically
+                    'inputOptions' => ['class' => 'form-control form-control-user'],
+                    'errorOptions' => ['class' => 'invalid-feedback text-danger small d-block'],
+                ],
+            ]); ?>
 
-    <div class="row">
-        <div class="col-lg-5">
-            <?php $form = ActiveForm::begin(['id' => 'form-signup']); ?>
+            <?= $form->field($model, 'username', [
+                'inputOptions' => [
+                    'class' => 'form-control form-control-user',
+                    'placeholder' => 'Username',
+                    'autofocus' => true,
+                ]
+            ])->label(false) ?>
 
-                <?= $form->field($model, 'username')->textInput(['autofocus' => true]) ?>
+            <?= $form->field($model, 'email', [
+                'inputOptions' => [
+                    'class' => 'form-control form-control-user',
+                    'placeholder' => 'Email Address',
+                ]
+            ])->textInput(['type' => 'email'])->label(false) ?>
 
-                <?= $form->field($model, 'email') ?>
-
-                <?= $form->field($model, 'password')->passwordInput() ?>
-
-                <?= $form->field($model, 'password_repeat')->passwordInput() ?>
-
-                <div class="form-group">
-                    <?= Html::submitButton('Signup', ['class' => 'btn btn-primary', 'name' => 'signup-button']) ?>
+            <div class="form-group row">
+                <div class="col-sm-6 mb-3 mb-sm-0">
+                    <?= $form->field($model, 'password', [
+                        'inputOptions' => [
+                            'class' => 'form-control form-control-user',
+                            'placeholder' => 'Password'
+                        ]
+                    ])->passwordInput()->label(false) ?>
                 </div>
+                <div class="col-sm-6">
+                    <?= $form->field($model, 'password_repeat', [
+                        'inputOptions' => [
+                            'class' => 'form-control form-control-user',
+                            'placeholder' => 'Repeat Password'
+                        ]
+                    ])->passwordInput()->label(false) ?>
+                </div>
+            </div>
 
+            <?= Html::submitButton('Register Account', ['class' => 'btn btn-primary btn-user btn-block', 'name' => 'signup-button']) ?>
+
+            <hr>
+            <a href="#" class="btn btn-google btn-user btn-block disabled"> {/* Placeholder for OAuth */}
+                <i class="fab fa-google fa-fw"></i> Register with Google
+            </a>
+            <a href="#" class="btn btn-facebook btn-user btn-block disabled"> {/* Placeholder for OAuth */}
+                <i class="fab fa-facebook-f fa-fw"></i> Register with Facebook
+            </a>
             <?php ActiveForm::end(); ?>
+            <hr>
+            <div class="text-center">
+                <?= Html::a('Forgot Password?', ['site/request-password-reset'], ['class' => 'small']) ?>
+            </div>
+            <div class="text-center">
+                <?= Html::a('Already have an account? Login!', ['site/login'], ['class' => 'small']) ?>
+            </div>
         </div>
     </div>
 </div>
