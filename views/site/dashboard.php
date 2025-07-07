@@ -5,8 +5,12 @@
 /** @var int $tasksAssignedCount */
 /** @var int $activeTasksInOwnedProjectsCount */
 /** @var app\models\Task[] $recentlyDueTasks */
+/** @var array $overallTaskStatusData */
+/** @var array $tasksNearingDeadlineData */
+/** @var array $userTaskLoadData */
 
 use yii\helpers\Html;
+use yii\web\View;
 use yii\helpers\Url;
 
 $this->title = 'Dashboard';
@@ -85,4 +89,304 @@ $this->params['breadcrumbs'][] = $this->title;
         <p>No tasks assigned to you are due soon or overdue.</p>
     <?php endif; ?>
 
+    <hr class="my-4">
+
+    <div class="row">
+        <!-- Overall Task Status Pie Chart -->
+        <div class="col-xl-6 col-lg-7">
+            <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Overall Task Status</h6>
+                    <?php /*
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                            <div class="dropdown-header">Dropdown Header:</div>
+                            <a class="dropdown-item" href="#">Action</a>
+                            <a class="dropdown-item" href="#">Another action</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="#">Something else here</a>
+                        </div>
+                    </div>
+                    */ ?>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="overallTaskStatusPieChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        <?php
+                        $legendItems = [];
+                        if (isset($overallTaskStatusData['labels']) && is_array($overallTaskStatusData['labels'])) {
+                            foreach ($overallTaskStatusData['labels'] as $index => $label) {
+                                $color = $overallTaskStatusData['backgroundColors'][$index] ?? '#ccc';
+                                $legendItems[] = '<span class="mr-2"><i class="fas fa-circle" style="color:' . $color . '"></i> ' . Html::encode($label) . '</span>';
+                            }
+                        }
+                        echo implode("\n", $legendItems);
+                        ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Placeholder for another chart -->
+        <div class="col-xl-6 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Tasks Nearing Deadline (Next 7 Days)</h6>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($tasksNearingDeadlineData) && !empty($tasksNearingDeadlineData['labels'])): ?>
+                        <div class="chart-bar"> {/* Using chart-bar for consistency, though it's horizontal */}
+                            <canvas id="tasksNearingDeadlineChart"></canvas>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-center text-muted mt-4 mb-4">No tasks nearing deadline in the next 7 days.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="row">
+        <!-- User Task Load Bar Chart -->
+        <div class="col-lg-12"> {/* Full width for this chart potentially */}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">User Task Load (Active Tasks)</h6>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($userTaskLoadData) && !empty($userTaskLoadData['labels'])): ?>
+                        <div class="chart-bar">
+                            <canvas id="userTaskLoadChart"></canvas>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-center text-muted mt-4 mb-4">No user task load data available or no active tasks found.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<?php
+if (!empty($overallTaskStatusData) && !empty($overallTaskStatusData['labels'])) {
+    $chartJsLabels = json_encode($overallTaskStatusData['labels']);
+    $chartJsCounts = json_encode($overallTaskStatusData['counts']);
+    $chartJsBackgroundColors = json_encode($overallTaskStatusData['backgroundColors']);
+    $chartJsHoverBackgroundColors = json_encode($overallTaskStatusData['hoverBackgroundColors']);
+    $totalOverallTasks = array_sum($overallTaskStatusData['counts']);
+
+    // Ensure Chart.js is registered (it might be registered multiple times if not careful, Yii handles this)
+    $this->registerJsFile(Yii::getAlias('@web/sb-admin-2/vendor/chart.js/Chart.min.js'), ['position' => View::POS_END, 'depends' => [\yii\web\YiiAsset::class]]);
+
+    $jsOverallPie = <<<JS
+// Set new default font family and font color to mimic Bootstrap's default styling
+Chart.defaults.global.defaultFontFamily = 'Nunito', '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+Chart.defaults.global.defaultFontColor = '#858796';
+
+// Overall Task Status Pie Chart
+if (document.getElementById("overallTaskStatusPieChart")) {
+    var ctxOverallPie = document.getElementById("overallTaskStatusPieChart");
+    var overallTaskStatusPieChart = new Chart(ctxOverallPie, {
+      type: 'doughnut', // or 'pie'
+      data: {
+        labels: $chartJsLabels,
+        datasets: [{
+          data: $chartJsCounts,
+          backgroundColor: $chartJsBackgroundColors,
+          hoverBackgroundColor: $chartJsHoverBackgroundColors,
+          hoverBorderColor: "rgba(234, 236, 244, 1)",
+        }],
+      },
+      options: {
+        maintainAspectRatio: false,
+        tooltips: {
+          backgroundColor: "rgb(255,255,255)",
+          bodyFontColor: "#858796",
+          borderColor: '#dddfeb',
+          borderWidth: 1,
+          xPadding: 15,
+          yPadding: 15,
+          displayColors: false,
+          caretPadding: 10,
+          callbacks: {
+            label: function(tooltipItem, data) {
+              var dataset = data.datasets[tooltipItem.datasetIndex];
+              var currentValue = dataset.data[tooltipItem.index];
+              var percentage = parseFloat((currentValue / $totalOverallTasks * 100).toFixed(2));
+              if (isNaN(percentage)) percentage = 0;
+              return data.labels[tooltipItem.index] + ': ' + currentValue + ' (' + percentage + '%)';
+            }
+          }
+        },
+        legend: {
+          display: false // Custom legend is built below the chart
+        },
+        cutoutPercentage: 80, // For doughnut chart
+      },
+    });
+}
+JS;
+    $this->registerJs($jsOverallPie, View::POS_READY, 'overallTaskStatusPieChartScript');
+}
+
+if (!empty($tasksNearingDeadlineData) && !empty($tasksNearingDeadlineData['labels'])) {
+    $deadlineLabels = json_encode($tasksNearingDeadlineData['labels']);
+    $deadlineData = json_encode($tasksNearingDeadlineData['data']); // Days remaining
+    $deadlineBgColors = json_encode($tasksNearingDeadlineData['backgroundColors']);
+    $deadlineBorderColors = json_encode($tasksNearingDeadlineData['borderColors']);
+
+    // Ensure Chart.js is registered (it might be registered multiple times if not careful, Yii handles this)
+    $this->registerJsFile(Yii::getAlias('@web/sb-admin-2/vendor/chart.js/Chart.min.js'), ['position' => View::POS_END, 'depends' => [\yii\web\YiiAsset::class]]);
+
+    $jsDeadlineBar = <<<JS
+// Tasks Nearing Deadline Horizontal Bar Chart
+if (document.getElementById("tasksNearingDeadlineChart")) {
+    var ctxDeadlineBar = document.getElementById("tasksNearingDeadlineChart");
+    var tasksNearingDeadlineChart = new Chart(ctxDeadlineBar, {
+        type: 'horizontalBar',
+        data: {
+            labels: $deadlineLabels,
+            datasets: [{
+                label: 'Days Remaining',
+                data: $deadlineData,
+                backgroundColor: $deadlineBgColors,
+                borderColor: $deadlineBorderColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            maintainAspectRatio: false, // Important for custom height
+            scales: {
+                xAxes: [{
+                    ticks: {
+                        beginAtZero: true,
+                        // You might want to format ticks if they represent days, e.g., add " days"
+                        callback: function(value, index, values) {
+                            return value + ' days';
+                        }
+                    },
+                     gridLines: {
+                      display: true,
+                      drawBorder: false
+                    }
+                }],
+                yAxes: [{
+                    ticks: {
+                        // autoSkip: false, // Show all labels if space permits
+                        // maxRotation: 0,
+                        // minRotation: 0
+                    },
+                     gridLines: {
+                      display: false, // Hide Y-axis grid lines for cleaner look
+                      drawBorder: false
+                    }
+                }]
+            },
+            legend: {
+                display: false // Hiding legend as dataset label is clear enough
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        var label = data.datasets[tooltipItem.datasetIndex].label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += tooltipItem.xLabel + ' days remaining';
+                        return label;
+                    }
+                }
+            },
+            // Adjust height of the chart container dynamically or via CSS
+            // For example, if you have a fixed height container:
+            // responsive: true,
+            // onResize: function(chart, newSize) {
+            //     // Adjust canvas height based on number of items
+            //     var numItems = chart.data.labels.length;
+            //     var newHeight = numItems * 40; // 40px per item, adjust as needed
+            //     chart.canvas.parentNode.style.height = newHeight + 'px';
+            // }
+        }
+    });
+    // Initial resize trigger if using onResize for dynamic height
+    // if(tasksNearingDeadlineChart.options.onResize) {
+    //    tasksNearingDeadlineChart.options.onResize(tasksNearingDeadlineChart, null);
+    // }
+}
+JS;
+    $this->registerJs($jsDeadlineBar, View::POS_READY, 'tasksNearingDeadlineChartScript');
+}
+
+if (!empty($userTaskLoadData) && !empty($userTaskLoadData['labels'])) {
+    $userLoadLabels = json_encode($userTaskLoadData['labels']);
+    $userLoadData = json_encode($userTaskLoadData['data']);
+    $userLoadBgColors = json_encode($userTaskLoadData['backgroundColors']);
+    $userLoadBorderColors = json_encode($userTaskLoadData['borderColors']);
+
+    // Ensure Chart.js is registered
+    $this->registerJsFile(Yii::getAlias('@web/sb-admin-2/vendor/chart.js/Chart.min.js'), ['position' => View::POS_END, 'depends' => [\yii\web\YiiAsset::class]]);
+
+    $jsUserLoadBar = <<<JS
+// User Task Load Bar Chart
+if (document.getElementById("userTaskLoadChart")) {
+    var ctxUserLoadBar = document.getElementById("userTaskLoadChart");
+    var userTaskLoadChart = new Chart(ctxUserLoadBar, {
+        type: 'bar', // Vertical bar chart
+        data: {
+            labels: $userLoadLabels,
+            datasets: [{
+                label: 'Active Tasks',
+                data: $userLoadData,
+                backgroundColor: $userLoadBgColors,
+                borderColor: $userLoadBorderColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true,
+                        stepSize: 1 // Ensure integer steps for task counts
+                    }
+                }],
+                xAxes: [{
+                     gridLines: {
+                        display: false
+                    }
+                }]
+            },
+            legend: {
+                display: true, // Show legend as dataset label is 'Active Tasks'
+                position: 'top'
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        var label = data.datasets[tooltipItem.datasetIndex].label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        label += tooltipItem.yLabel + ' tasks';
+                        return label;
+                    }
+                }
+            }
+        }
+    });
+}
+JS;
+    $this->registerJs($jsUserLoadBar, View::POS_READY, 'userTaskLoadChartScript');
+}
+?>

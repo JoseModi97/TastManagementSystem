@@ -105,8 +105,162 @@ class SiteController extends Controller
             'projectCount' => $projectCount,
             'tasksAssignedCount' => $tasksAssignedCount,
             'activeTasksInOwnedProjectsCount' => $activeTasksInOwnedProjectsCount,
-            'recentlyDueTasks' => $recentlyDueTasks,
+            'recentlyDueTasks' => $recentlyDueTasks, // This is for the list, might be reusable or need a different query for chart
+            'overallTaskStatusData' => $this->getOverallTaskStatusData(),
+            'tasksNearingDeadlineData' => $this->getTasksNearingDeadlineData(),
+            'userTaskLoadData' => $this->getUserTaskLoadData(),
         ]);
+    }
+
+    private function getOverallTaskStatusData()
+    {
+        $statusCounts = Task::find()
+            ->select(['status_id', 'COUNT(*) as count'])
+            ->joinWith('status s', false) // Join with status table
+            ->groupBy('status_id')
+            ->asArray()
+            ->all();
+
+        $statusLabels = \app\models\TaskStatus::find()->select(['id', 'label'])->asArray()->indexBy('id')->all();
+
+        $labels = [];
+        $counts = [];
+        $backgroundColors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796']; // Default SB Admin 2 Colors
+        $hoverBackgroundColors = ['#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#c73e28', '#606268'];
+        $colorIndex = 0;
+
+        $dataForChart = [];
+
+        foreach ($statusCounts as $statusCount) {
+            $label = $statusLabels[$statusCount['status_id']]['label'] ?? 'Unknown Status';
+            $labels[] = $label;
+            $counts[] = (int)$statusCount['count'];
+            $dataForChart[] = [ // For easier passing if needed elsewhere, or if GridView was used
+                'label' => $label,
+                'count' => (int)$statusCount['count'],
+            ];
+        }
+
+        return [
+            'labels' => $labels,
+            'counts' => $counts,
+            'backgroundColors' => array_slice($backgroundColors, 0, count($labels)), // Ensure enough colors
+            'hoverBackgroundColors' => array_slice($hoverBackgroundColors, 0, count($labels)),
+            // 'dataForTable' => $dataForChart, // If we wanted to show a table too
+        ];
+    }
+
+    private function getTasksNearingDeadlineData($daysLimit = 7, $taskLimit = 5)
+    {
+        $doneStatusLabel = 'Done'; // Assuming 'Done' is the label for completed status
+        $today = new \DateTime();
+        $deadlineDate = (new \DateTime())->modify("+$daysLimit days");
+
+        $tasks = Task::find()
+            ->joinWith(['status s', 'project p']) // Eager load status and project
+            ->where(['!=', 's.label', $doneStatusLabel])
+            ->andWhere(['is not', 'task.due_date', null])
+            ->andWhere(['between', 'task.due_date', $today->format('Y-m-d H:i:s'), $deadlineDate->format('Y-m-d H:i:s')])
+            ->orderBy(['task.due_date' => SORT_ASC])
+            ->limit($taskLimit)
+            ->all();
+
+        $labels = [];
+        $daysRemainingValues = []; // Will store days remaining
+        $backgroundColors = [];
+        $borderColors = [];
+
+        $colorPalette = [ // For different bars
+            ['bg' => 'rgba(255, 99, 132, 0.5)', 'border' => 'rgba(255, 99, 132, 1)'], // Red
+            ['bg' => 'rgba(255, 159, 64, 0.5)', 'border' => 'rgba(255, 159, 64, 1)'], // Orange
+            ['bg' => 'rgba(255, 205, 86, 0.5)', 'border' => 'rgba(255, 205, 86, 1)'], // Yellow
+            ['bg' => 'rgba(75, 192, 192, 0.5)', 'border' => 'rgba(75, 192, 192, 1)'], // Green
+            ['bg' => 'rgba(54, 162, 235, 0.5)', 'border' => 'rgba(54, 162, 235, 1)'], // Blue
+        ];
+        $colorIndex = 0;
+
+        foreach ($tasks as $task) {
+            /** @var Task $task */
+            $dueDate = new \DateTime($task->due_date);
+            $interval = $today->diff($dueDate);
+            $days = (int)$interval->format('%r%a'); // %r gives sign, %a total days
+
+            // Label: Task Title (Project Name)
+            $labels[] = $task->title . " (" . ($task->project->name ?? 'N/A') . ")";
+            $daysRemainingValues[] = $days; // Days remaining
+
+            // Assign colors from palette
+            $color = $colorPalette[$colorIndex % count($colorPalette)];
+            $backgroundColors[] = $color['bg'];
+            $borderColors[] = $color['border'];
+            $colorIndex++;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $daysRemainingValues,
+            'backgroundColors' => $backgroundColors,
+            'borderColors' => $borderColors,
+        ];
+    }
+
+    private function getUserTaskLoadData($userLimit = 10)
+    {
+        $doneStatusLabel = 'Done';
+
+        // Find users and count their active tasks
+        // This could be inefficient if there are many users and many tasks.
+        // A more optimized query might directly count tasks per user.
+        $users = User::find()
+            ->select(['user.id', 'user.username', 'COUNT(t.id) AS active_task_count'])
+            ->from(['user' => User::tableName()])
+            ->leftJoin(['t' => Task::tableName()], 't.assigned_to = user.id')
+            ->leftJoin(['s' => \app\models\TaskStatus::tableName()], 's.id = t.status_id')
+            ->where(['!=', 's.label', $doneStatusLabel])
+            ->orWhere(['s.label' => null]) // Include tasks that might not have a status or status link yet
+            ->groupBy(['user.id', 'user.username'])
+            ->orderBy(['active_task_count' => SORT_DESC])
+            ->limit($userLimit)
+            ->asArray()
+            ->all();
+
+        // Fallback for users with no active tasks to ensure they can be listed if needed,
+        // or to correctly represent users with zero active tasks if not using LEFT JOIN count.
+        // The current query with COUNT and GROUP BY should handle users with 0 active tasks if they have any tasks at all.
+        // If a user has NO tasks assigned ever, they won't appear. This is usually fine for a "task load" chart.
+
+        $labels = [];
+        $counts = [];
+        $backgroundColors = [];
+        $borderColors = [];
+
+        $colorPalette = [
+            ['bg' => 'rgba(75, 192, 192, 0.5)', 'border' => 'rgba(75, 192, 192, 1)'], // Teal
+            ['bg' => 'rgba(54, 162, 235, 0.5)', 'border' => 'rgba(54, 162, 235, 1)'], // Blue
+            ['bg' => 'rgba(255, 206, 86, 0.5)', 'border' => 'rgba(255, 206, 86, 1)'], // Yellow
+            ['bg' => 'rgba(153, 102, 255, 0.5)', 'border' => 'rgba(153, 102, 255, 1)'], // Purple
+            ['bg' => 'rgba(255, 159, 64, 0.5)', 'border' => 'rgba(255, 159, 64, 1)'], // Orange
+            ['bg' => 'rgba(199, 199, 199, 0.5)', 'border' => 'rgba(199, 199, 199, 1)'], // Grey
+            ['bg' => 'rgba(255, 99, 132, 0.5)', 'border' => 'rgba(255, 99, 132, 1)'], // Red
+        ];
+        $colorIndex = 0;
+
+        foreach ($users as $user) {
+            $labels[] = $user['username'];
+            $counts[] = (int)$user['active_task_count']; // Count comes from the query
+
+            $color = $colorPalette[$colorIndex % count($colorPalette)];
+            $backgroundColors[] = $color['bg'];
+            $borderColors[] = $color['border'];
+            $colorIndex++;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $counts,
+            'backgroundColors' => $backgroundColors,
+            'borderColors' => $borderColors,
+        ];
     }
 
     /**
