@@ -20,14 +20,14 @@ class AppAsset extends AssetBundle
     public $basePath = '@webroot';
     public $baseUrl = '@web';
     public $css = [
-        'css/site.css',
-        'css/site-custom.css',
+        'css/site.css', // Keep site.css for potential base styles
+        // 'css/site-custom.css', // Remove as it was likely BS5 specific
     ];
     public $js = [
         'js/main.js', // Added main.js
     ];
     public $depends = [
-        'yii\web\YiiAsset',
-        'yii\bootstrap5\BootstrapAsset',
+        'yii\web\YiiAsset', // Provides jQuery
+        // 'yii\bootstrap5\BootstrapAsset', // Removed to use SB Admin 2's Bootstrap 4
     ];
 }
