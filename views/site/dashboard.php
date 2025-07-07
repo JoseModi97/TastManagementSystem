@@ -18,6 +18,9 @@ use yii\helpers\Url;
 /** @var app\models\Task[] $hotListTasks */
 /** @var int $dueTodayCount */
 /** @var int $overdueCount */
+/** @var int $activeEngagementsCount */
+/** @var int $missionAccomplishedCount */
+/** @var array $projectPulseData */
 
 $this->title = 'Dashboard';
 $this->params['breadcrumbs'][] = $this->title;
@@ -105,6 +108,80 @@ $priorityLabels = [1 => 'Low', 2 => 'Medium', 3 => 'High']; // For Hot List disp
         </div>
     </div>
     <!-- End Mission Control Phase 1 Row -->
+
+    <!-- Mission Control Phase 2 Summary Cards Row -->
+    <div class="row">
+        <!-- Active Engagements Card -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Active Engagements (Projects)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?= Html::encode($activeEngagementsCount ?? 0) ?></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-briefcase fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mission Accomplished! Card -->
+        <div class="col-xl-6 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Missions Accomplished! (Tasks This Week)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800"><?= Html::encode($missionAccomplishedCount ?? 0) ?></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Mission Control Phase 2 Summary Cards Row -->
+
+    <!-- Project Pulse Section -->
+    <div class="row">
+        <div class="col-lg-12 mb-4"> <!-- Full width for this section -->
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Project Pulse</h6>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($projectPulseData)): ?>
+                        <?php foreach ($projectPulseData as $projectData): ?>
+                            <h4 class="small font-weight-bold">
+                                <?= Html::a(Html::encode($projectData['name']), ['project/view', 'id' => $projectData['id']], ['class'=>"text-dark"]) ?>
+                                <span class="float-right"><?= $projectData['percentage'] ?>%</span>
+                            </h4>
+                            <div class="progress mb-2">
+                                <div class="progress-bar
+                                    <?php
+                                    if ($projectData['percentage'] < 30) echo 'bg-danger';
+                                    elseif ($projectData['percentage'] < 70) echo 'bg-warning';
+                                    else echo 'bg-success';
+                                    ?>
+                                    " role="progressbar" style="width: <?= $projectData['percentage'] ?>%"
+                                     aria-valuenow="<?= $projectData['percentage'] ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-center text-muted mt-3">No specific project pulse data to display currently.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Project Pulse Section -->
 
     <hr class="my-4">
 
