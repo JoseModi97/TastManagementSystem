@@ -70,7 +70,8 @@ class DataController extends Controller
         $projectPerUserCountSafe = (int)$projectPerUserCount;
         $taskPerProjectCountSafe = (int)$taskPerProjectCount;
 
-        $commandSafe = "php {$yiiCommand} fake-data/load --userCount={$userCountSafe} --projectPerUserCount={$projectPerUserCountSafe} --taskPerProjectCount={$taskPerProjectCountSafe} 2>&1"; // 2>&1 to capture stderr
+        // Parameters should be passed as arguments to the action, not options
+        $commandSafe = "php {$yiiCommand} fake-data/load {$userCountSafe} {$projectPerUserCountSafe} {$taskPerProjectCountSafe} 2>&1"; // 2>&1 to capture stderr
 
         $output = [];
         $return_var = null;
