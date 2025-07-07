@@ -49,8 +49,8 @@ $this->params['breadcrumbs'][] = $this->title;
                 'value' => function ($data) {
                     $percentage = $data['percentage_complete'];
                     return Progress::widget([
-                        'percent' => $percentage,
-                        'label' => $percentage . '%',
+                        'percent' => (int)$percentage, // Cast to int here
+                        'label' => $percentage . '%', // Label can still show float
                         'barOptions' => ['class' => 'bg-success'], // Adjust class as needed
                     ]);
                 },
