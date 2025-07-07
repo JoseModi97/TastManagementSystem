@@ -101,6 +101,27 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
     </div>
 </footer>
 
+<!-- Generic AJAX Modal -->
+<div class="modal fade" id="ajaxModal" tabindex="-1" aria-labelledby="ajaxModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg"> <!-- Or modal-xl, modal-sm or default -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ajaxModalLabel">Modal title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content will be loaded here by AJAX -->
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <!-- Additional buttons like 'Save changes' can be added here or dynamically by JS if needed -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Generic AJAX Modal -->
+
 <?php $this->endBody() ?>
 </body>
 </html>

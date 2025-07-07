@@ -3,12 +3,9 @@
 use app\models\Project;
 use yii\helpers\Html;
 use yii\helpers\Url;
-// use yii\grid\ActionColumn; // Will be replaced by kartik\grid\ActionColumn
-// use yii\grid\GridView; // Will be replaced by kartik\grid\GridView
-use yii\widgets\Pjax; // Keep Pjax for now, AjaxCrud might manage its own Pjax or work with this one.
-use kartik\grid\GridView;
-use biladina\ajaxcrud\CrudAsset;
-use biladina\ajaxcrud\BulkButtonWidget;
+use yii\grid\ActionColumn;
+use yii\grid\GridView;
+use yii\widgets\Pjax;
 
 /** @var yii\web\View $this */
 /** @var app\models\ProjectSearch $searchModel */
@@ -16,25 +13,29 @@ use biladina\ajaxcrud\BulkButtonWidget;
 
 $this->title = 'Projects';
 $this->params['breadcrumbs'][] = $this->title;
-
-// Register AjaxCrud assets
-CrudAsset::register($this);
-
 ?>
 <div class="project-index">
 
     <h1><?= Html::encode($this->title) ?></h1>
 
-    <?php Pjax::begin(['id'=>'crud-datatable-pjax']); ?>
+    <p>
+        <?= Html::a('Create Project', ['create'], [
+            'class' => 'btn btn-success ajax-modal-link',
+            'data-modal-title' => 'Create New Project'
+        ]) ?>
+    </p>
+
+    <?php Pjax::begin(['id' => 'project-grid-pjax']); ?>
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
     <?= GridView::widget([
-        'id' => 'crud-datatable',
+        'tableOptions' => ['class' => 'table table-striped table-bordered'],
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pjax'=>true, // Pjax is enabled for kartik\grid\GridView
+        'id' => 'project-grid', // Added an ID for the GridView widget itself if needed
         'columns' => [
             ['class' => 'yii\grid\SerialColumn'],
+
             // 'id',
             'name',
             'description:ntext',
@@ -43,68 +44,53 @@ CrudAsset::register($this);
                 'value' => function ($model) {
                     return $model->createdBy ? $model->createdBy->username : null;
                 },
+                // Optional: Filter by username if you have a join in ProjectSearch
+                // 'filter' => Html::activeTextInput($searchModel, 'createdByUsername'),
             ],
             'created_at:datetime',
             //'updated_at:datetime',
             [
-                'class' => 'kartik\grid\ActionColumn',
-                'dropdown' => false, // Disable dropdown for actions
-                'vAlign'=>'middle',
-                'urlCreator' => function($action, $model, $key, $index) {
-                        return Url::to([$action,'id'=>$key]);
+                'class' => ActionColumn::class,
+                'urlCreator' => function ($action, Project $model, $key, $index, $column) {
+                    return Url::toRoute([$action, 'id' => $model->id]);
                 },
-                'viewOptions'=>['role'=>'modal-remote','title'=>'View','data-toggle'=>'tooltip'],
-                'updateOptions'=>['role'=>'modal-remote','title'=>'Update', 'data-toggle'=>'tooltip'],
-                'deleteOptions'=>['role'=>'modal-remote','title'=>'Delete',
-                                  'data-confirm'=>false, 'data-method'=>false,// for overide yii data api
-                                  'data-request-method'=>'post',
-                                  'data-toggle'=>'tooltip',
-                                  'data-confirm-title'=>'Are you sure?',
-                                  'data-confirm-message'=>'Are you sure want to delete this item'],
+                'buttons' => [
+                    'view' => function ($url, $model, $key) {
+                        return Html::a('<span class="fas fa-eye"></span>', $url, [
+                            'title' => Yii::t('yii', 'View'),
+                            'class' => 'ajax-modal-link',
+                            'data-modal-title' => 'View Project: ' . $model->name,
+                        ]);
+                    },
+                    'update' => function ($url, $model, $key) {
+                        // Only show update if user has permission (example, can be more granular)
+                        if (Yii::$app->user->can('updateProject', ['project' => $model]) || Yii::$app->user->can('updateOwnProject', ['project' => $model])) {
+                            return Html::a('<span class="fas fa-pencil-alt"></span>', $url, [
+                                'title' => Yii::t('yii', 'Update'),
+                                'class' => 'ajax-modal-link',
+                                'data-modal-title' => 'Update Project: ' . $model->name,
+                            ]);
+                        }
+                        return '';
+                    },
+                    'delete' => function ($url, $model, $key) {
+                         // Only show delete if user has permission
+                        if (Yii::$app->user->can('deleteProject', ['project' => $model]) || Yii::$app->user->can('deleteOwnProject', ['project' => $model])) {
+                            return Html::a('<span class="fas fa-trash"></span>', $url, [
+                                'title' => Yii::t('yii', 'Delete'),
+                                'data-confirm' => Yii::t('yii', 'Are you sure you want to delete this item?'),
+                                'data-method' => 'post',
+                                // 'class' => 'ajax-delete-link', // If we want custom JS confirmation/AJAX delete
+                                // 'data-pjax-container' => 'project-grid-pjax', // For AJAX delete
+                            ]);
+                        }
+                        return '';
+                    }
+                ],
             ],
         ],
-        'toolbar'=> [
-            ['content'=>
-                Html::a('<i class="fas fa-plus"></i> Add Project', ['create'],
-                ['role'=>'modal-remote','title'=> 'Create new Projects','class'=>'btn btn-success']) .
-                Html::a('<i class="fas fa-redo"></i>', [''],
-                ['data-pjax'=>1, 'class'=>'btn btn-outline-secondary', 'title'=>'Reset Grid']).
-                '{toggleData}'.
-                '{export}'
-            ],
-        ],
-        'striped' => true,
-        'condensed' => true,
-        'responsive' => true,
-        'panel' => [
-            'type' => GridView::TYPE_PRIMARY, // Use TYPE_PRIMARY or other constants from GridView
-            'heading' => '<i class="fas fa-list"></i> Projects listing',
-            'before'=>'<em>* Resize table columns just like a spreadsheet by dragging the column edges.</em>',
-            'after'=>BulkButtonWidget::widget([
-                        'buttons'=>Html::a('<i class="fas fa-trash"></i>&nbsp; Delete All',
-                        ["bulk-delete"] ,
-                        [
-                            "class"=>"btn btn-danger btn-xs",
-                            'role'=>'modal-remote-bulk',
-                            'data-confirm'=>false, 'data-method'=>false,// for overide yii data api
-                            'data-request-method'=>'post',
-                            'data-confirm-title'=>'Are you sure?',
-                            'data-confirm-message'=>'Are you sure want to delete this item'
-                        ]),
-                    ]).
-                    '<div class="clearfix"></div>',
-        ]
-    ])?>
+    ]); ?>
 
     <?php Pjax::end(); ?>
 
 </div>
-
-<?php \kartik\widgets\Modal::begin([
-    "id"=>"ajaxCrudModal",
-    "footer"=>"", // Leave blank since footer is provided by controller via JSON response
-    "options" => [ // Additional options for the modal
-        "tabindex" => false // important for Select2 to work properly
-    ],
-])?>
-<?php \kartik\widgets\Modal::end(); ?>

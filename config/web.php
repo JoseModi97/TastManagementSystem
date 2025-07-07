@@ -70,34 +70,14 @@ $config = [
         'api' => [ // Added API module
             'class' => 'app\modules\api\Module',
         ],
-        'ajaxcrud' => [
-            'class' => 'biladina\ajaxcrud\Module',
-            // Optional: configure the layout for the modals
-            // 'layout' => '@vendor/biladina/yii2-ajaxcrud-bs4/src/views/layouts/ajax-layout.php'
-            // Optional: if you want to redefine the icons for BS4 (default is BS3 fa icons)
-            // 'bsVersion' => '4', // ensure this is set if using BS4 specific features in ajaxcrud
-            /*
-            'ModalClass' => 'modal fade', // Default class for modal
-            'ModalHeaderClass' => 'modal-header',
-            'ModalBodyClass' => 'modal-body',
-            'ModalFooterClass' => 'modal-footer',
-            'ModalSize' => 'modal-lg', // Example: 'modal-sm', 'modal-lg', 'modal-xl'
-            */
-        ],
     ],
     'components' => [
         'i18n' => [
             'translations' => [
-                'yii2-ajaxcrud' => [ // Ensure this key is unique or managed if other modules use it
+                'yii2-ajaxcrud' => [
                     'class' => 'yii\i18n\PhpMessageSource',
-                    // It's better to use the alias provided by the extension if available,
-                    // or ensure the path is correct.
-                    // For biladina/yii2-ajaxcrud-bs4, the messages might be structured differently
-                    // or included in the main application's message configuration.
-                    // Check the documentation for biladina/yii2-ajaxcrud-bs4 for i18n setup.
-                    // Assuming 'basePath' => '@vendor/biladina/yii2-ajaxcrud-bs4/src/messages',
-                    'basePath' => '@vendor/biladina/yii2-ajaxcrud-bs4/src/messages', // Adjusted path
-                    'sourceLanguage' => 'en-US', // Or 'en'
+                    'basePath' => '@yii2ajaxcrud/ajaxcrud/messages',
+                    'sourceLanguage' => 'en',
                 ],
             ]
         ],

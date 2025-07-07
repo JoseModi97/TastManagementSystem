@@ -13,21 +13,18 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="project-view">
 
-    <?php /* <h1><?= Html::encode($this->title) ?></h1> Modal title is set by controller */ ?>
+    <?php // The H1 title is removed as the modal itself will have a title set by JavaScript ?>
 
-    <?php /* Action buttons are typically in the modal footer or main grid for ajaxcrud
+    <?php /*
     <p>
-        <?php if ($model->created_by === Yii::$app->user->id || Yii::$app->user->can('updateProject', ['project' => $model])): ?>
-            <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary', 'role'=>'modal-remote']) ?>
-        <?php endif; ?>
-        <?php if ($model->created_by === Yii::$app->user->id || Yii::$app->user->can('deleteProject', ['project' => $model])): ?>
+        <?php if ($model->created_by === Yii::$app->user->id): ?>
+            <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
             <?= Html::a('Delete', ['delete', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
-                'role'=>'modal-remote', // For ajax deletion, if desired from view page directly
-                'data-confirm'=>false, 'data-method'=>false,
-                'data-request-method'=>'post',
-                'data-confirm-title'=>'Are you sure?',
-                'data-confirm-message'=>'Are you sure want to delete this item'
+                'data' => [
+                    'confirm' => 'Are you sure you want to delete this item?',
+                    'method' => 'post',
+                ],
             ]) ?>
         <?php endif; ?>
     </p>
