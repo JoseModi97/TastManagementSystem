@@ -12,6 +12,7 @@ use app\models\ContactForm;
 use app\models\SignupForm;
 use app\models\Project; // Added for dashboard
 use app\models\Task; // Added for dashboard
+use app\models\User;
 
 class SiteController extends Controller
 {
