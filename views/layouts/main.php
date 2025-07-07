@@ -134,6 +134,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii
 
                 if (Yii::$app->user->can('admin')) {
                     $menuItems[] = ['label' => 'User Management', 'url' => ['/user-management/index'], 'icon' => 'fas fa-fw fa-users-cog'];
+                    $menuItems[] = ['label' => 'Data Management', 'url' => ['/data/index'], 'icon' => 'fas fa-database'];
                 }
                 // Example of a collapsible menu item (needs JS and specific CSS from SB Admin 2 to work)
                 /*
