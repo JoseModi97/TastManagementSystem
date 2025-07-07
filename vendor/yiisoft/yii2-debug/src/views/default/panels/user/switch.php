@@ -1,7 +1,7 @@
 <?php
 
 use yii\debug\UserswitchAsset;
-use yii\grid\GridView;
+use kartik\grid\GridView;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 

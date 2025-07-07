@@ -1,6 +1,6 @@
 <?php
 
-use yii\grid\GridView;
+use kartik\grid\GridView;
 use yii\helpers\Html;
 
 /* @var $panel yii\debug\panels\ProfilingPanel */
